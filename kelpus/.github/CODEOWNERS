@@ -1,0 +1,15 @@
+# 기본 오너 - 모든 파일에 대한 리뷰 필요
+* @team-lead
+
+# 팀원A: 인증, 프로필, 구독
+src/features/auth/ @dev-a
+src/features/profile/ @dev-a
+src/features/subscription/ @dev-a
+
+# 팀원B: 식단, 헬스
+src/features/diet/ @dev-b
+src/features/health/ @dev-b
+
+# 팀원C: 러닝, SNS
+src/features/running/ @dev-c
+src/features/sns/ @dev-c

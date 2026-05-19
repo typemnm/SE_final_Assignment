@@ -1,0 +1,155 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1779208456189,
+  "projectRoot": "/home/typemnm/cwnu/SE_final/SE_final_Assignment/kelpus",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "18.3.1",
+        "category": "frontend"
+      },
+      {
+        "name": "jest",
+        "version": "29.7.0",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run start",
+    "scripts": {
+      "android": "react-native run-android",
+      "ios": "react-native run-ios",
+      "start": "react-native start",
+      "test": "jest",
+      "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+      "type-check": "tsc --noEmit",
+      "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+      "prepare": "husky install"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "feature-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "__tests__",
+      "docs",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "__tests__": {
+      "path": "__tests__",
+      "purpose": "Test files",
+      "fileCount": 1,
+      "lastAccessed": 1779208456170,
+      "keyFiles": [
+        "App.test.tsx"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 3,
+      "lastAccessed": 1779208456171,
+      "keyFiles": [
+        "ARCHITECTURE.md",
+        "VERIFICATION_REPORT.md",
+        "WORK_DISTRIBUTION.md"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1779208456184,
+      "keyFiles": []
+    },
+    "src/api": {
+      "path": "src/api",
+      "purpose": "API routes",
+      "fileCount": 6,
+      "lastAccessed": 1779208456186,
+      "keyFiles": [
+        "auth.api.ts",
+        "diet.api.ts",
+        "health.api.ts"
+      ]
+    },
+    "src/components": {
+      "path": "src/components",
+      "purpose": "UI components",
+      "fileCount": 1,
+      "lastAccessed": 1779208456187,
+      "keyFiles": [
+        "index.ts"
+      ]
+    },
+    "src/types": {
+      "path": "src/types",
+      "purpose": "Type definitions",
+      "fileCount": 6,
+      "lastAccessed": 1779208456187,
+      "keyFiles": [
+        "auth.types.ts",
+        "diet.types.ts",
+        "health.types.ts"
+      ]
+    },
+    "src/utils": {
+      "path": "src/utils",
+      "purpose": "Utility functions",
+      "fileCount": 4,
+      "lastAccessed": 1779208456187,
+      "keyFiles": [
+        "format.ts",
+        "index.ts",
+        "storage.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "CONTRIBUTING.md",
+      "accessCount": 1,
+      "lastAccessed": 1779208459705,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

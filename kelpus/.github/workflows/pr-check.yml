@@ -1,0 +1,104 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  label:
+    name: Auto Label PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Label by branch name
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branchName = context.payload.pull_request.head.ref;
+            const labels = [];
+
+            if (branchName.startsWith('feature/')) {
+              labels.push('feature');
+            } else if (branchName.startsWith('fix/') || branchName.startsWith('bugfix/') || branchName.startsWith('hotfix/')) {
+              labels.push('bugfix');
+            } else if (branchName.startsWith('docs/')) {
+              labels.push('docs');
+            } else if (branchName.startsWith('refactor/')) {
+              labels.push('refactor');
+            } else if (branchName.startsWith('chore/')) {
+              labels.push('chore');
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: labels,
+              });
+              console.log(`Labels added: ${labels.join(', ')}`);
+            } else {
+              console.log('No matching label pattern found for branch: ' + branchName);
+            }
+
+  commit-check:
+    name: Commit Message Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const conventionalCommitRegex = /^(feat|fix|refactor|docs|test|chore|perf|ci|style|build|revert)(\(.+\))?: .{1,72}/;
+            const errors = [];
+
+            for (const { commit } of commits) {
+              const message = commit.message.split('\n')[0];
+              if (!conventionalCommitRegex.test(message)) {
+                errors.push(`❌ Invalid commit message: "${message}"`);
+              }
+            }
+
+            if (errors.length > 0) {
+              const body = [
+                '## ❌ 커밋 메시지 형식 오류',
+                '',
+                '다음 커밋 메시지가 Conventional Commits 형식을 따르지 않습니다:',
+                '',
+                ...errors,
+                '',
+                '**올바른 형식:** `<type>(<scope>): <description>`',
+                '',
+                '**허용 타입:** feat, fix, refactor, docs, test, chore, perf, ci, style, build, revert',
+                '',
+                '**예시:**',
+                '- `feat(auth): 소셜 로그인 기능 추가`',
+                '- `fix(diet): 영양소 계산 오류 수정`',
+              ].join('\n');
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+
+              core.setFailed(`${errors.length}개의 커밋 메시지가 형식을 위반했습니다.`);
+            } else {
+              console.log('All commit messages are valid!');
+            }
