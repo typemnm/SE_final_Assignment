@@ -1,16 +1,21 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {useSubscription} from '../../subscription/hooks/useSubscription';
+import {SubscriptionType} from '@appTypes/subscription.types';
 import {colors, typography, spacing} from '@theme/index';
 
 export const AnalysisCountBadge = () => {
-  const {remainingAnalyses, totalAnalyses, plan} = useSubscription();
-  const isLow = remainingAnalyses <= 1;
+  const {plan, dailyLimitStatus} = useSubscription();
+  const remaining = dailyLimitStatus?.remaining ?? 0;
+  const limit = dailyLimitStatus?.limit ?? 0;
+  const isLow = remaining <= 1;
 
   return (
     <View style={[styles.badge, isLow && styles.badgeLow]}>
-      <Text style={styles.text}>AI 분석 {remainingAnalyses}/{totalAnalyses}회 남음</Text>
-      {plan === 'free' && <Text style={styles.subText}>프리미엄으로 업그레이드하면 더 많이 이용 가능</Text>}
+      <Text style={styles.text}>AI 분석 {remaining}/{limit}회 남음</Text>
+      {plan?.type === SubscriptionType.FREE && (
+        <Text style={styles.subText}>프리미엄으로 업그레이드하면 더 많이 이용 가능</Text>
+      )}
     </View>
   );
 };

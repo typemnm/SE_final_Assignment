@@ -81,6 +81,8 @@ GoogleService-Info.plist
 .env.test.local
 .env.production.local
 .env.staging
+.omc
+.github
 
 # Bundle artifacts
 *.jsbundle

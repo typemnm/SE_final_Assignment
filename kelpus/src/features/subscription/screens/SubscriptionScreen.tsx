@@ -1,23 +1,26 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {useSubscription} from '../hooks/useSubscription';
+import {SubscriptionType} from '@appTypes/subscription.types';
 import {Button} from '@components/common/Button';
 import {colors, typography, spacing} from '@theme/index';
 
 export const SubscriptionScreen = () => {
-  const {plan, remainingAnalyses, totalAnalyses, upgradeToPremium} = useSubscription();
+  const {plan, dailyLimitStatus, upgradeToPremium} = useSubscription();
+  const isFree = plan?.type === SubscriptionType.FREE;
+  const planName = isFree ? '무료 플랜' : '프리미엄 플랜';
+  const remaining = dailyLimitStatus?.remaining ?? 0;
+  const limit = dailyLimitStatus?.limit ?? 0;
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>구독 관리</Text>
       <View style={styles.card}>
         <Text style={styles.planLabel}>현재 플랜</Text>
-        <Text style={styles.planName}>{plan === 'free' ? '무료 플랜' : '프리미엄 플랜'}</Text>
-        <Text style={styles.analysisCount}>오늘 남은 AI 분석: {remainingAnalyses} / {totalAnalyses}회</Text>
+        <Text style={styles.planName}>{planName}</Text>
+        <Text style={styles.analysisCount}>오늘 남은 AI 분석: {remaining} / {limit}회</Text>
       </View>
-      {plan === 'free' && (
-        <Button title="프리미엄으로 업그레이드" onPress={upgradeToPremium} />
-      )}
+      {isFree && <Button title="프리미엄으로 업그레이드" onPress={upgradeToPremium} />}
     </View>
   );
 };

@@ -1,15 +1,21 @@
-import {useSelector, useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import type {RootState, AppDispatch} from '@store/index';
-import {setPlan, decrementAnalyses} from '../store/subscriptionSlice';
-import type {PlanType} from '../store/subscriptionSlice';
+import {fetchPlan, checkLimit, upgradePlan, clearSubscriptionError} from '../store/subscriptionSlice';
+import {SubscriptionType} from '@appTypes/subscription.types';
 
 export const useSubscription = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const subscription = useSelector((state: RootState) => state.subscription);
+  const {plan, dailyLimitStatus, loading, error} = useSelector(
+    (state: RootState) => state.subscription,
+  );
 
-  const canAnalyze = subscription.remainingAnalyses > 0;
-  const upgradeToPremium = () => dispatch(setPlan('premium'));
-  const useAnalysis = () => { if (canAnalyze) dispatch(decrementAnalyses()); };
+  // 잔여 분석 횟수로 분석 가능 여부 판단
+  const canAnalyze = dailyLimitStatus?.canAnalyze ?? true;
 
-  return {...subscription, canAnalyze, upgradeToPremium, useAnalysis};
+  const loadPlan = () => dispatch(fetchPlan());
+  const refreshLimit = () => dispatch(checkLimit());
+  const upgradeToPremium = () => dispatch(upgradePlan(SubscriptionType.PREMIUM));
+  const clearError = () => dispatch(clearSubscriptionError());
+
+  return {plan, dailyLimitStatus, loading, error, canAnalyze, loadPlan, refreshLimit, upgradeToPremium, clearError};
 };

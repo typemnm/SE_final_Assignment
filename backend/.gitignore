@@ -1,0 +1,38 @@
+# Python 바이트코드
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# 가상 환경
+venv/
+.venv/
+env/
+.env/
+
+# 환경 변수 (절대 커밋 금지)
+.env
+.env.local
+.env.*.local
+
+# Alembic 자동생성 임시파일
+*.pyc
+
+# 배포 산출물
+dist/
+build/
+*.egg-info/
+
+# 테스트 캐시
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 타입 체커
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/

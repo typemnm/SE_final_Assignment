@@ -6,7 +6,7 @@ import type {LeaderboardPeriod} from '@appTypes/running.types';
 import {formatDistance} from '@utils/format';
 
 export const LeaderboardScreen = () => {
-  const {leaderboard, fetchLeaderboard} = useRunning();
+  const {leaderboardEntries, fetchLeaderboard} = useRunning();
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
 
   useEffect(() => { fetchLeaderboard(period, 'total_distance'); }, [period]);
@@ -24,7 +24,7 @@ export const LeaderboardScreen = () => {
         ))}
       </View>
       <FlatList
-        data={leaderboard}
+        data={leaderboardEntries}
         keyExtractor={item => item.userId}
         renderItem={({item}) => (
           <View style={[styles.entry, item.isCurrentUser && styles.myEntry]}>
