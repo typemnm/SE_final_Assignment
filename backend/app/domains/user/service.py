@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from jose import jwt
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,17 +15,22 @@ from app.domains.user.models import GenderEnum, User
 from app.domains.user.repository import SubscriptionPlanRepository, UserRepository
 from app.domains.user.schemas import (
     LoginRequest,
+    RefreshRequest,
+    RefreshResponse,
     RegisterRequest,
     SubscriptionLimitResponse,
     SubscriptionPlanResponse,
     TokenResponse,
     UpdateProfileRequest,
+    UserInfo,
     UserProfileResponse,
 )
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _user_repo = UserRepository()
 _plan_repo = SubscriptionPlanRepository()
+
+_REFRESH_EXPIRE_DAYS = 7
 
 
 def _hash_password(plain: str) -> str:
@@ -42,29 +47,43 @@ def _create_access_token(user_id: str) -> tuple[str, int]:
     """
     JWT 액세스 토큰을 생성한다.
 
-    Args:
-        user_id: 사용자 UUID 문자열.
-
     Returns:
         (token, expires_in_seconds) 튜플.
     """
     expire_seconds = settings.JWT_EXPIRE_MINUTES * 60
     expire = datetime.now(timezone.utc) + timedelta(seconds=expire_seconds)
-    payload = {"sub": user_id, "exp": expire}
+    payload = {"sub": user_id, "exp": expire, "type": "access"}
     token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return token, expire_seconds
+
+
+def _create_refresh_token(user_id: str) -> str:
+    """
+    JWT 리프레시 토큰을 생성한다 (7일 유효).
+
+    Returns:
+        refresh token 문자열.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(days=_REFRESH_EXPIRE_DAYS)
+    payload = {"sub": user_id, "exp": expire, "type": "refresh"}
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def _build_token_response(user: User) -> TokenResponse:
+    """User 객체로부터 TokenResponse를 생성한다."""
+    access_token, expires_in = _create_access_token(str(user.id))
+    refresh_token = _create_refresh_token(str(user.id))
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+        user=UserInfo(id=user.id, email=user.email),
+    )
 
 
 async def register_user(req: RegisterRequest, db: AsyncSession) -> TokenResponse:
     """
     신규 사용자를 등록하고 JWT 토큰을 발급한다.
-
-    Args:
-        req: 회원가입 요청 데이터.
-        db: 비동기 DB 세션.
-
-    Returns:
-        JWT 토큰 응답.
 
     Raises:
         HTTPException(409): 이메일이 이미 존재할 경우.
@@ -84,23 +103,16 @@ async def register_user(req: RegisterRequest, db: AsyncSession) -> TokenResponse
         health_goal=req.health_goal,
         db=db,
     )
-    token, expires_in = _create_access_token(str(user.id))
-    return TokenResponse(access_token=token, expires_in=expires_in)
+    return _build_token_response(user)
 
 
 async def login_user(req: LoginRequest, db: AsyncSession) -> TokenResponse:
     """
-    이메일/비밀번호로 인증하고 JWT 토큰을 발급한다 (사용자_인증_요청 → 인증_토큰_발급).
-
-    Args:
-        req: 로그인 요청 데이터.
-        db: 비동기 DB 세션.
-
-    Returns:
-        JWT 토큰 응답.
+    이메일/비밀번호로 인증하고 JWT 토큰을 발급한다.
 
     Raises:
         HTTPException(401): 이메일 또는 비밀번호가 올바르지 않을 경우.
+        HTTPException(403): 비활성화된 계정일 경우.
     """
     user = await _user_repo.get_by_email(req.email, db)
     if not user or not _verify_password(req.password, user.password_hash):
@@ -113,24 +125,44 @@ async def login_user(req: LoginRequest, db: AsyncSession) -> TokenResponse:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="비활성화된 계정입니다.",
         )
-    token, expires_in = _create_access_token(str(user.id))
-    return TokenResponse(access_token=token, expires_in=expires_in)
+    return _build_token_response(user)
+
+
+async def refresh_access_token(req: RefreshRequest, db: AsyncSession) -> RefreshResponse:
+    """
+    리프레시 토큰을 검증하고 새 액세스 토큰을 발급한다.
+
+    Raises:
+        HTTPException(401): 리프레시 토큰이 유효하지 않을 경우.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="리프레시 토큰이 유효하지 않습니다.",
+    )
+    try:
+        payload = jwt.decode(
+            req.refresh_token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        if payload.get("type") != "refresh":
+            raise credentials_exception
+        user_id: str | None = payload.get("sub")
+        if not user_id:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = await _user_repo.get_by_id(user_id, db)
+    if not user or not user.is_active:
+        raise credentials_exception
+
+    access_token, expires_in = _create_access_token(str(user.id))
+    return RefreshResponse(access_token=access_token, expires_in=expires_in)
 
 
 async def get_profile(user_id: str, db: AsyncSession) -> UserProfileResponse:
-    """
-    사용자 프로필을 조회한다 (통계_조회).
-
-    Args:
-        user_id: 사용자 UUID 문자열.
-        db: 비동기 DB 세션.
-
-    Returns:
-        사용자 프로필 응답.
-
-    Raises:
-        HTTPException(404): 사용자를 찾을 수 없을 경우.
-    """
+    """사용자 프로필을 조회한다."""
     user = await _user_repo.get_by_id(user_id, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자를 찾을 수 없습니다.")
@@ -140,17 +172,7 @@ async def get_profile(user_id: str, db: AsyncSession) -> UserProfileResponse:
 async def update_profile(
     user_id: str, req: UpdateProfileRequest, db: AsyncSession
 ) -> UserProfileResponse:
-    """
-    사용자 프로필을 수정한다 (프로필_수정).
-
-    Args:
-        user_id: 사용자 UUID 문자열.
-        req: 수정 요청 데이터.
-        db: 비동기 DB 세션.
-
-    Returns:
-        수정된 사용자 프로필 응답.
-    """
+    """사용자 프로필을 수정한다."""
     user = await _user_repo.get_by_id(user_id, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자를 찾을 수 없습니다.")
@@ -160,16 +182,7 @@ async def update_profile(
 
 
 async def get_subscription_plan(user_id: str, db: AsyncSession) -> SubscriptionPlanResponse:
-    """
-    사용자의 구독 플랜 정보를 조회한다.
-
-    Args:
-        user_id: 사용자 UUID 문자열.
-        db: 비동기 DB 세션.
-
-    Returns:
-        구독 플랜 응답.
-    """
+    """사용자의 구독 플랜 정보를 조회한다."""
     plan = await _plan_repo.get_by_user_id(user_id, db)
     if not plan:
         raise HTTPException(
@@ -179,16 +192,7 @@ async def get_subscription_plan(user_id: str, db: AsyncSession) -> SubscriptionP
 
 
 async def get_subscription_limit(user_id: str, db: AsyncSession) -> SubscriptionLimitResponse:
-    """
-    잔여 AI 분석 횟수를 확인한다 (잔여_횟수_확인).
-
-    Args:
-        user_id: 사용자 UUID 문자열.
-        db: 비동기 DB 세션.
-
-    Returns:
-        잔여 횟수 응답.
-    """
+    """잔여 AI 분석 횟수를 확인한다."""
     plan = await _plan_repo.get_by_user_id(user_id, db)
     if not plan:
         raise HTTPException(

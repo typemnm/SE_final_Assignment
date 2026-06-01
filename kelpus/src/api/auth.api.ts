@@ -1,12 +1,15 @@
 import {apiClient} from './index';
-import type {LoginRequest, LoginResponse, SignUpRequest, User} from '@appTypes/auth.types';
+import type {LoginRequest, LoginResponse, SignUpRequest} from '@appTypes/auth.types';
 
 export const authApi = {
-  login: (data: LoginRequest) => apiClient.post<LoginResponse>('/auth/login', data),
-  signUp: (data: SignUpRequest) => apiClient.post<User>('/auth/signup', data),
-  logout: () => apiClient.post('/auth/logout'),
+  login: (data: LoginRequest) =>
+    apiClient.post<LoginResponse>('/api/v1/auth/login', data),
+  signUp: (data: SignUpRequest) =>
+    apiClient.post<LoginResponse>('/api/v1/auth/register', data),
+  logout: () =>
+    apiClient.post('/api/v1/auth/logout'),
   refreshToken: (refreshToken: string) =>
-    apiClient.post<{accessToken: string}>('/auth/refresh', {refreshToken}),
-  socialLogin: (provider: string, token: string) =>
-    apiClient.post<LoginResponse>('/auth/social', {provider, token}),
+    apiClient.post<{access_token: string; expires_in: number}>('/api/v1/auth/refresh', {
+      refresh_token: refreshToken,
+    }),
 };

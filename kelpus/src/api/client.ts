@@ -68,15 +68,15 @@ apiClient.interceptors.response.use(
       }
 
       // 토큰 갱신 (순환 참조 방지를 위해 원시 axios 사용)
-      const {data} = await axios.post<{accessToken: string}>(
-        `${API_BASE_URL}/auth/refresh`,
-        {refreshToken},
+      const {data} = await axios.post<{access_token: string}>(
+        `${API_BASE_URL}/api/v1/auth/refresh`,
+        {refresh_token: refreshToken},
       );
 
-      await setStorage('auth_token', data.accessToken);
-      flushQueue(null, data.accessToken);
+      await setStorage('auth_token', data.access_token);
+      flushQueue(null, data.access_token);
 
-      originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+      originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
       return apiClient(originalRequest);
     } catch (refreshError) {
       flushQueue(refreshError, null);
