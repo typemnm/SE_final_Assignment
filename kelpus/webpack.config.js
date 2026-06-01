@@ -66,10 +66,8 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
-      'process.env': JSON.stringify({
-        NODE_ENV: process.env.NODE_ENV || 'development',
-        API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:8000',
-      }),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+      'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || 'http://localhost:8000'),
     }),
     new HtmlWebpackPlugin({
       template: './public/index.html',
