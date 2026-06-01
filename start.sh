@@ -113,7 +113,7 @@ cd "$FRONTEND_DIR"
 
 if [ ! -d node_modules ]; then
   log "프론트엔드 패키지 설치 중..."
-  npm install --legacy-peer-deps --silent || true
+  npm install --legacy-peer-deps --silent
 fi
 
 free_port 8080
