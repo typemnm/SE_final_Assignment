@@ -1,5 +1,5 @@
 import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
-import type {User, LoginRequest} from '@appTypes/auth.types';
+import type {User, LoginRequest, SignUpRequest} from '@appTypes/auth.types';
 import {authApi} from '@api/auth.api';
 import {setStorage, removeStorage} from '@utils/storage';
 
@@ -22,11 +22,24 @@ const initialState: AuthState = {
 export const loginThunk = createAsyncThunk('auth/login', async (data: LoginRequest, {rejectWithValue}) => {
   try {
     const response = await authApi.login(data);
-    await setStorage('auth_token', response.data.accessToken);
-    await setStorage('refresh_token', response.data.refreshToken);
+    await setStorage('auth_token', response.data.access_token);
+    await setStorage('refresh_token', response.data.refresh_token);
     return response.data;
   } catch (err: unknown) {
     return rejectWithValue('로그인에 실패했습니다.');
+  }
+});
+
+export const signUpThunk = createAsyncThunk('auth/signUp', async (data: SignUpRequest, {rejectWithValue}) => {
+  try {
+    const response = await authApi.signUp(data);
+    await setStorage('auth_token', response.data.access_token);
+    await setStorage('refresh_token', response.data.refresh_token);
+    return response.data;
+  } catch (err: unknown) {
+    const status = (err as {response?: {status?: number}}).response?.status;
+    if (status === 409) return rejectWithValue('이미 사용 중인 이메일입니다.');
+    return rejectWithValue('회원가입에 실패했습니다.');
   }
 });
 
@@ -61,10 +74,21 @@ const authSlice = createSlice({
       .addCase(loginThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
+        state.accessToken = action.payload.access_token;
         state.isAuthenticated = true;
       })
       .addCase(loginThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(signUpThunk.pending, state => { state.loading = true; state.error = null; })
+      .addCase(signUpThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.access_token;
+        state.isAuthenticated = true;
+      })
+      .addCase(signUpThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

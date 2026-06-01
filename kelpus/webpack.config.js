@@ -26,10 +26,6 @@ module.exports = {
       'react-native-maps': path.resolve(__dirname, 'src/shims/react-native-maps.js'),
       'react-native-health-connect': path.resolve(__dirname, 'src/shims/react-native-health-connect.js'),
       'react-native-permissions': path.resolve(__dirname, 'src/shims/react-native-permissions.js'),
-      'react-native-vector-icons/MaterialCommunityIcons': path.resolve(__dirname, 'src/shims/react-native-vector-icons.js'),
-      'react-native-vector-icons/Ionicons': path.resolve(__dirname, 'src/shims/react-native-vector-icons.js'),
-      'react-native-vector-icons/FontAwesome': path.resolve(__dirname, 'src/shims/react-native-vector-icons.js'),
-      'react-native-vector-icons/MaterialIcons': path.resolve(__dirname, 'src/shims/react-native-vector-icons.js'),
       '@react-native-async-storage/async-storage': path.resolve(__dirname, 'src/shims/react-native-async-storage.js'),
     },
   },
@@ -69,6 +65,10 @@ module.exports = {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
       'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || 'http://localhost:8000'),
     }),
+    new webpack.NormalModuleReplacementPlugin(
+      /^react-native-vector-icons(\/.*)?$/,
+      path.resolve(__dirname, 'src/shims/react-native-vector-icons.js'),
+    ),
     new HtmlWebpackPlugin({
       template: './public/index.html',
     }),

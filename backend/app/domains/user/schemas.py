@@ -6,7 +6,7 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field
 
 from app.domains.user.models import GenderEnum, SubscriptionTypeEnum
 
@@ -31,12 +31,35 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="비밀번호")
 
 
+class RefreshRequest(BaseModel):
+    """토큰 갱신 요청 스키마."""
+
+    refresh_token: str = Field(..., description="리프레시 토큰")
+
+
+class UserInfo(BaseModel):
+    """토큰 응답에 포함되는 최소 사용자 정보."""
+
+    id: uuid.UUID
+    email: str
+
+
 class TokenResponse(BaseModel):
     """JWT 토큰 응답 스키마."""
 
     access_token: str = Field(..., description="JWT 액세스 토큰")
+    refresh_token: str = Field(..., description="JWT 리프레시 토큰")
     token_type: str = Field(default="bearer", description="토큰 유형")
-    expires_in: int = Field(..., description="만료 시간 (초)")
+    expires_in: int = Field(..., description="액세스 토큰 만료 시간 (초)")
+    user: UserInfo = Field(..., description="인증된 사용자 기본 정보")
+
+
+class RefreshResponse(BaseModel):
+    """토큰 갱신 응답 스키마."""
+
+    access_token: str = Field(..., description="새 JWT 액세스 토큰")
+    token_type: str = Field(default="bearer", description="토큰 유형")
+    expires_in: int = Field(..., description="액세스 토큰 만료 시간 (초)")
 
 
 # ─── 사용자 스키마 ────────────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ export const Input = ({label, value, onChangeText, placeholder, secureTextEntry 
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor={colors.text.disabled}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         onFocus={() => setFocused(true)}
