@@ -79,6 +79,56 @@ uvicorn app.main:app --reload --port 8000
 
 일일 한도 초과 시 `402 Payment Required` 반환.
 
+## 개발용 시드 계정
+
+| 계정 | 이메일 | 비밀번호 | 플랜 | 일일 AI 분석 |
+|------|--------|---------|------|-------------|
+| 어드민 | `admin@kelpus.com` | `Admin1234!` | Premium | 10회 |
+| 게스트 | `guest@kelpus.com` | `Guest1234!` | Free | 3회 |
+
+**시드 실행** (DB가 실행 중인 상태에서):
+
+```bash
+cd backend
+.venv/bin/python -m app.seed
+```
+
+**계정 확인** (Swagger UI):
+```
+http://localhost:8000/docs → POST /api/v1/auth/login
+```
+
+**psql로 직접 조회**:
+```bash
+docker exec -it kelpus-postgres psql -U kelpus -d kelpus
+SELECT u.email, s.type, s.daily_ai_limit
+  FROM users u JOIN subscription_plans s ON s.user_id = u.id;
+\q
+```
+
+---
+
+## DB 관리
+
+```bash
+# 컨테이너 시작 / 중지
+docker compose up -d postgres
+docker compose down
+
+# psql 접속
+docker exec -it kelpus-postgres psql -U kelpus -d kelpus
+
+# 유용한 psql 명령
+\dt                  -- 테이블 목록
+\d users             -- users 테이블 스키마
+SELECT * FROM users; -- 전체 사용자 조회
+
+# 볼륨 포함 전체 초기화 (데이터 삭제 주의)
+docker compose down -v
+```
+
+---
+
 ## 아키텍처 원칙
 
 - **도메인 분리**: user / diet / running / sns 독립 모듈
