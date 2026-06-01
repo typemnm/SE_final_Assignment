@@ -130,6 +130,9 @@ fi
 if ! command -v npm &>/dev/null; then
   error "npm을 찾을 수 없습니다. Node.js 18 이상을 설치해주세요."
 fi
+if ! command -v setsid &>/dev/null; then
+  error "setsid를 찾을 수 없습니다. (util-linux 패키지) 설치를 확인하세요."
+fi
 
 # ── 1. PostgreSQL ─────────────────────────────────────────────────────────────
 log "PostgreSQL 시작 중..."
