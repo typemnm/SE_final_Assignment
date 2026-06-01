@@ -2,7 +2,7 @@
 import axios, {AxiosInstance, InternalAxiosRequestConfig} from 'axios';
 import {getStorage, setStorage, clearStorage} from '@utils/storage';
 
-const API_BASE_URL = process.env.API_BASE_URL ?? 'https://api.kelpus.com';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000';
 
 // 토큰 갱신 중 중복 요청 방지를 위한 큐
 let isRefreshing = false;
