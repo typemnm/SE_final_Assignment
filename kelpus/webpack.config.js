@@ -63,7 +63,7 @@ module.exports = {
     new webpack.DefinePlugin({
       __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-      'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || 'http://localhost:8000'),
+      'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || ''),
     }),
     new webpack.NormalModuleReplacementPlugin(
       /^react-native-vector-icons(\/.*)?$/,
@@ -77,5 +77,12 @@ module.exports = {
     port: 8080,
     historyApiFallback: true,
     hot: true,
+    proxy: [
+      {
+        context: ['/api'],
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    ],
   },
 };
