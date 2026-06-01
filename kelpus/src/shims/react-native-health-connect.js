@@ -1,5 +1,5 @@
 export const initialize = async () => true;
-export const requestPermission = async () => true;
+export const requestPermission = async (permissions = []) => permissions;
 export const readRecords = async (recordType, options) => ({ records: [] });
 export const getSdkStatus = async () => 3;
 export const SdkAvailabilityStatus = { SDK_AVAILABLE: 3, SDK_UNAVAILABLE: 1, SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED: 2 };
