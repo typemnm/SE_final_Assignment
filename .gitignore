@@ -1,6 +1,9 @@
 # OMC / Claude Code 작업 디렉토리
 .omc/
 
+# 루트 package-lock.json (kelpus/ 안에서만 유효)
+/package-lock.json
+
 # macOS
 .DS_Store
 
