@@ -16,6 +16,18 @@ error(){ echo -e "${RED}[error]${NC}  $1"; exit 1; }
 BACKEND_PID=""
 FRONTEND_PID=""
 
+# 포트를 사용 중인 프로세스 종료
+free_port() {
+  local port=$1
+  local pid
+  pid=$(lsof -ti tcp:"$port" 2>/dev/null || true)
+  if [ -n "$pid" ]; then
+    warn "포트 $port 사용 중 → 기존 프로세스($pid) 종료"
+    kill "$pid" 2>/dev/null || true
+    sleep 1
+  fi
+}
+
 cleanup() {
   echo ""
   log "서버 종료 중..."
@@ -72,8 +84,9 @@ fi
 log "시드 계정 확인 중..."
 .venv/bin/python -m app.seed 2>/dev/null || true
 
+free_port 8000
 log "백엔드 서버 시작 중..."
-.venv/bin/uvicorn app.main:app --reload --port 8000 &
+{ .venv/bin/uvicorn app.main:app --reload --port 8000 2>&1 | sed 's/^/\x1b[36m[backend]\x1b[0m /'; } &
 BACKEND_PID=$!
 
 # ── 3. 프론트엔드 ─────────────────────────────────────────────────────────────
@@ -84,8 +97,9 @@ if [ ! -d node_modules ]; then
   npm install --silent
 fi
 
+free_port 8080
 log "프론트엔드 시작 중..."
-npm run web &
+{ npm run web 2>&1 | sed 's/^/\x1b[35m[frontend]\x1b[0m /'; } &
 FRONTEND_PID=$!
 
 # ── 완료 안내 ─────────────────────────────────────────────────────────────────
