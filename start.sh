@@ -91,15 +91,23 @@ ensure_venv_pip() {
   error "가상환경에 pip를 설치할 수 없습니다. python3-venv/python3-pip 설치를 확인하세요."
 }
 
-# Python 3.12 경로 탐색 (pyenv 3.12.x → 시스템 python3.12 → python3 순)
+# Python 3.11+ 경로 탐색 (pyenv 3.12/3.11 → 시스템 python3.12/python3.11 → python3 순)
 find_python() {
   local pyenv_root="${PYENV_ROOT:-$HOME/.pyenv}"
-  local py
-  py=$(find "$pyenv_root/versions" -name "python" -path "*/3.12*/bin/python" 2>/dev/null | sort -V | tail -1)
-  if [ -x "$py" ]; then echo "$py"; return; fi
-  command -v python3.12 2>/dev/null && return
-  command -v python3    2>/dev/null && return
-  error "Python 3.12 이상을 찾을 수 없습니다. Python을 설치해주세요."
+  local py=""
+
+  if [ -d "$pyenv_root/versions" ]; then
+    py=$(find "$pyenv_root/versions" -path "*/3.12*/bin/python" -name python 2>/dev/null | sort -V | tail -1 || true)
+    if [ -z "$py" ]; then
+      py=$(find "$pyenv_root/versions" -path "*/3.11*/bin/python" -name python 2>/dev/null | sort -V | tail -1 || true)
+    fi
+  fi
+  if [ -n "$py" ] && [ -x "$py" ]; then echo "$py"; return 0; fi
+
+  if command -v python3.12 &>/dev/null; then command -v python3.12; return 0; fi
+  if command -v python3.11 &>/dev/null; then command -v python3.11; return 0; fi
+  if command -v python3    &>/dev/null; then command -v python3; return 0; fi
+  error "Python 3.11 이상을 찾을 수 없습니다. Python을 설치해주세요."
 }
 
 cleanup() {
