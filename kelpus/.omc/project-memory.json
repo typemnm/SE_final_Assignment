@@ -145,9 +145,75 @@
   },
   "hotPaths": [
     {
+      "path": "webpack.config.js",
+      "accessCount": 9,
+      "lastAccessed": 1780286302774,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "accessCount": 5,
+      "lastAccessed": 1779209051337,
+      "type": "file"
+    },
+    {
+      "path": "index.web.js",
+      "accessCount": 5,
+      "lastAccessed": 1780286555222,
+      "type": "file"
+    },
+    {
+      "path": "public/index.html",
+      "accessCount": 3,
+      "lastAccessed": 1780286958639,
+      "type": "file"
+    },
+    {
+      "path": "src/features/diet/components/AnalysisCountBadge.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1779609368899,
+      "type": "file"
+    },
+    {
+      "path": "src/features/subscription/screens/SubscriptionScreen.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1779609394953,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1780284715787,
+      "type": "file"
+    },
+    {
       "path": "CONTRIBUTING.md",
       "accessCount": 1,
       "lastAccessed": 1779208459705,
+      "type": "file"
+    },
+    {
+      "path": "src/api/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779609462051,
+      "type": "file"
+    },
+    {
+      "path": "babel.config.js",
+      "accessCount": 1,
+      "lastAccessed": 1780275890917,
+      "type": "file"
+    },
+    {
+      "path": "App.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780281955325,
+      "type": "file"
+    },
+    {
+      "path": "src/api/client.ts",
+      "accessCount": 1,
+      "lastAccessed": 1780286315843,
       "type": "file"
     }
   ],
