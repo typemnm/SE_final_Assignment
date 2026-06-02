@@ -1,14 +1,25 @@
-import React from 'react';
-import {useSelector} from 'react-redux';
+import React, {useEffect} from 'react';
+import {useDispatch, useSelector} from 'react-redux';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import type {RootState} from '@store/index';
+import type {AppDispatch, RootState} from '@store/index';
+import {initAuthThunk} from '@features/auth/store/authSlice';
+import {LoadingSpinner} from '@components/common/LoadingSpinner';
 import {AuthNavigator} from './AuthNavigator';
 import {MainTabNavigator} from './MainTabNavigator';
 
 const Stack = createNativeStackNavigator();
 
 export const AppNavigator = () => {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const dispatch = useDispatch<AppDispatch>();
+  const {isAuthenticated, isInitialized} = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    dispatch(initAuthThunk());
+  }, [dispatch]);
+
+  if (!isInitialized) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>

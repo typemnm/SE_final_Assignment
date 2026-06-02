@@ -98,6 +98,50 @@ class UserRepository:
         await db.refresh(user)
         return user
 
+    async def get_by_social(
+        self, provider: str, social_id: str, db: AsyncSession
+    ) -> User | None:
+        """소셜 제공자 ID로 사용자를 조회한다."""
+        result = await db.execute(
+            select(User)
+            .where(User.social_provider == provider, User.social_id == social_id)
+            .options(selectinload(User.subscription_plan))
+        )
+        return result.scalar_one_or_none()
+
+    async def create_social(
+        self,
+        email: str,
+        provider: str,
+        social_id: str,
+        db: AsyncSession,
+    ) -> User:
+        """소셜 사용자를 생성하고 기본 구독 플랜을 함께 생성한다."""
+        user = User(
+            email=email,
+            password_hash=None,
+            social_provider=provider,
+            social_id=social_id,
+        )
+        db.add(user)
+        await db.flush()
+
+        plan = SubscriptionPlan(
+            user_id=user.id,
+            type=SubscriptionTypeEnum.free,
+            daily_ai_limit=settings.FREE_PLAN_DAILY_LIMIT,
+            renewal_date=date.today(),
+        )
+        db.add(plan)
+        await db.flush()
+        await db.refresh(user)
+        return user
+
+    async def delete(self, user: User, db: AsyncSession) -> None:
+        """사용자를 영구 삭제한다."""
+        await db.delete(user)
+        await db.flush()
+
     async def save(self, user: User, db: AsyncSession) -> User:
         """
         수정된 사용자 정보를 저장한다.

@@ -27,6 +27,10 @@ module.exports = {
       'react-native-health-connect': path.resolve(__dirname, 'src/shims/react-native-health-connect.js'),
       'react-native-permissions': path.resolve(__dirname, 'src/shims/react-native-permissions.js'),
       '@react-native-async-storage/async-storage': path.resolve(__dirname, 'src/shims/react-native-async-storage.js'),
+      'react-native-keychain': path.resolve(__dirname, 'src/shims/react-native-keychain.js'),
+      'react-native-google-signin': path.resolve(__dirname, 'src/shims/react-native-google-signin.js'),
+      '@invertase/react-native-apple-authentication': path.resolve(__dirname, 'src/shims/react-native-apple-authentication.js'),
+      '@react-native-kakao/user': path.resolve(__dirname, 'src/shims/react-native-kakao-user.js'),
     },
   },
   module: {
@@ -64,6 +68,7 @@ module.exports = {
       __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
       'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || ''),
+      'process.env.GOOGLE_WEB_CLIENT_ID': JSON.stringify(process.env.GOOGLE_WEB_CLIENT_ID || ''),
     }),
     new webpack.NormalModuleReplacementPlugin(
       /^react-native-vector-icons(\/.*)?$/,

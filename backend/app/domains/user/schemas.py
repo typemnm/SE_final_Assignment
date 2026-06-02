@@ -3,6 +3,7 @@
 요청/응답 데이터 검증 및 직렬화를 담당한다.
 """
 
+import enum
 import uuid
 from datetime import date, datetime
 
@@ -35,6 +36,21 @@ class RefreshRequest(BaseModel):
     """토큰 갱신 요청 스키마."""
 
     refresh_token: str = Field(..., description="리프레시 토큰")
+
+
+class SocialProviderEnum(str, enum.Enum):
+    """소셜 로그인 제공자 열거형."""
+
+    google = "google"
+    apple = "apple"
+    kakao = "kakao"
+
+
+class SocialLoginRequest(BaseModel):
+    """소셜 로그인 요청 스키마."""
+
+    provider: SocialProviderEnum = Field(..., description="소셜 제공자 (google/apple/kakao)")
+    id_token: str = Field(..., description="소셜 제공자의 ID 토큰 또는 액세스 토큰")
 
 
 class UserInfo(BaseModel):

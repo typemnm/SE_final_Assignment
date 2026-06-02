@@ -27,3 +27,10 @@ export interface SignUpRequest {
   gender?: 'male' | 'female';
   health_goal?: string;
 }
+
+export type SocialProvider = 'google' | 'apple' | 'kakao';
+
+export interface SocialLoginRequest {
+  provider: SocialProvider;
+  id_token: string;
+}

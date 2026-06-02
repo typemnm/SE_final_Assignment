@@ -3,8 +3,11 @@
 인증(회원가입, 로그인, JWT 발급), 프로필 관리, 구독 플랜 조회를 담당한다.
 """
 
+import base64
+import json
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -18,6 +21,7 @@ from app.domains.user.schemas import (
     RefreshRequest,
     RefreshResponse,
     RegisterRequest,
+    SocialLoginRequest,
     SubscriptionLimitResponse,
     SubscriptionPlanResponse,
     TokenResponse,
@@ -189,6 +193,92 @@ async def get_subscription_plan(user_id: str, db: AsyncSession) -> SubscriptionP
             status_code=status.HTTP_404_NOT_FOUND, detail="구독 플랜을 찾을 수 없습니다."
         )
     return SubscriptionPlanResponse.model_validate(plan)
+
+
+async def _verify_google_token(id_token: str) -> tuple[str, str | None]:
+    """Google ID 토큰을 tokeninfo 엔드포인트로 검증한다."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": id_token},
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Google 토큰 인증 실패")
+    data = resp.json()
+    return data["sub"], data.get("email")
+
+
+async def _verify_apple_token(identity_token: str) -> tuple[str, str | None]:
+    """Apple identity token (JWT)의 페이로드를 디코딩해 sub를 추출한다."""
+    parts = identity_token.split(".")
+    if len(parts) != 3:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 형식 오류")
+    padding = 4 - len(parts[1]) % 4
+    payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=" * padding))
+    sub: str | None = payload.get("sub")
+    if not sub:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 검증 실패")
+    return sub, payload.get("email")
+
+
+async def _verify_kakao_token(access_token: str) -> tuple[str, str | None]:
+    """Kakao 액세스 토큰으로 사용자 정보를 조회한다."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Kakao 토큰 인증 실패")
+    data = resp.json()
+    social_id = str(data["id"])
+    email: str | None = data.get("kakao_account", {}).get("email")
+    return social_id, email
+
+
+async def social_login_user(req: SocialLoginRequest, db: AsyncSession) -> TokenResponse:
+    """
+    소셜 제공자 토큰을 검증하고 사용자를 찾거나 생성한 후 JWT를 발급한다.
+
+    Raises:
+        HTTPException(401): 소셜 토큰 검증 실패.
+        HTTPException(403): 비활성화된 계정.
+    """
+    provider = req.provider.value
+
+    if provider == "google":
+        social_id, email = await _verify_google_token(req.id_token)
+    elif provider == "apple":
+        social_id, email = await _verify_apple_token(req.id_token)
+    else:
+        social_id, email = await _verify_kakao_token(req.id_token)
+
+    user = await _user_repo.get_by_social(provider, social_id, db)
+
+    if not user and email:
+        # 동일 이메일 계정이 있으면 소셜 정보를 연결
+        user = await _user_repo.get_by_email(email, db)
+        if user:
+            user.social_provider = provider
+            user.social_id = social_id
+            await _user_repo.save(user, db)
+
+    if not user:
+        fallback_email = email or f"{provider}_{social_id}@social.kelpus.com"
+        user = await _user_repo.create_social(fallback_email, provider, social_id, db)
+
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비활성화된 계정입니다.")
+
+    return _build_token_response(user)
+
+
+async def delete_account(user_id: str, db: AsyncSession) -> None:
+    """현재 사용자의 계정을 영구 삭제한다."""
+    user = await _user_repo.get_by_id(user_id, db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자를 찾을 수 없습니다.")
+    await _user_repo.delete(user, db)
 
 
 async def get_subscription_limit(user_id: str, db: AsyncSession) -> SubscriptionLimitResponse:
