@@ -14,7 +14,7 @@ from app.domains.diet.schemas import (
     DietSyncResponse,
 )
 from app.domains.user.repository import SubscriptionPlanRepository
-from app.infrastructure.adapters.ai_analyzer import AIAnalyzerService
+from app.infrastructure.adapters.ai_analyzer import AIAnalysisError, AIAnalyzerService
 
 _diet_record_repo = DietRecordRepository()
 _analysis_repo = DietAnalysisResultRepository()
@@ -80,34 +80,76 @@ async def analyze_diet(
             detail="일일 AI 분석 한도를 초과했습니다. 구독 플랜을 업그레이드하세요.",
         )
 
-    # 2. 식단 기록 생성 또는 기존 기록 사용
+    # 2. 식단 기록 존재만 확인하고 외부 AI 호출 전 DB 트랜잭션을 닫는다.
     if req.diet_record_id:
-        existing = await _diet_record_repo.get_by_id(req.diet_record_id, db)
+        existing = await _diet_record_repo.get_by_id_for_user(
+            req.diet_record_id,
+            user_id,
+            db,
+        )
         if existing is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="식단 기록을 찾을 수 없습니다.",
             )
-        record = existing
+        diet_record_id = existing.id
+        should_create_record = False
     else:
+        diet_record_id = None
+        should_create_record = True
+
+    # check_remaining_count()는 날짜 변경 시 plan 객체를 갱신할 수 있으므로
+    # 외부 이미지/Gemini 호출 동안 요청 DB 세션 트랜잭션을 점유하지 않도록
+    # 사전 검증 트랜잭션을 명시적으로 종료한다. 사용량은 저장 직전 재검증한다.
+    await db.rollback()
+
+    # 3. AI 분석 엔진 호출 (식단_이미지_분석)
+    try:
+        analysis_data = await _ai_analyzer.analyze_image(req.image_url)
+    except AIAnalysisError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+    # 4. 저장 직전 구독/기록 상태를 짧은 DB 트랜잭션에서 재확인한다.
+    plan = await _plan_repo.get_by_user_id(user_id, db)
+    if plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="구독 플랜 정보를 찾을 수 없습니다.",
+        )
+    if not plan.check_remaining_count():
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="일일 AI 분석 한도를 초과했습니다. 구독 플랜을 업그레이드하세요.",
+        )
+
+    if should_create_record:
         record = await _diet_record_repo.create_with_image(
             user_id=user_id,
             image_url=req.image_url,
             db=db,
         )
+        diet_record_id = record.id
+    else:
+        existing = await _diet_record_repo.get_by_id_for_user(
+            req.diet_record_id,
+            user_id,
+            db,
+        )
+        if existing is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="식단 기록을 찾을 수 없습니다.",
+            )
 
-    # 3. AI 분석 엔진 호출 (식단_이미지_분석)
-    analysis_data = await _ai_analyzer.analyze_image(req.image_url)
-
-    # 4. 결과 저장
+    # 5. 결과 저장
     analysis_result = await _analysis_repo.save_analysis(
         user_id=user_id,
-        diet_record_id=record.id,
+        diet_record_id=diet_record_id,
         analysis_data=analysis_data,
         db=db,
     )
 
-    # 5. 사용량 증가 (사용량_갱신)
+    # 6. 사용량 증가 (사용량_갱신)
     plan.update_usage()
     await db.flush()
 

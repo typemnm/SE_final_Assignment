@@ -213,8 +213,9 @@ async def _verify_apple_token(identity_token: str) -> tuple[str, str | None]:
     parts = identity_token.split(".")
     if len(parts) != 3:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 형식 오류")
-    padding = 4 - len(parts[1]) % 4
-    payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=" * padding))
+    padding = (-len(parts[1])) % 4
+    payload_b64 = parts[1] + ("=" * padding)
+    payload = json.loads(base64.urlsafe_b64decode(payload_b64))
     sub: str | None = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 검증 실패")

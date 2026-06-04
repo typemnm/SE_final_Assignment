@@ -58,7 +58,7 @@ backend/
 ```bash
 # 1. 환경 변수 설정
 cp .env.example .env
-# .env 파일을 편집하여 DATABASE_URL, JWT_SECRET_KEY 등을 설정
+# .env 파일을 편집하여 DATABASE_URL, JWT_SECRET_KEY, GEMINI_API_KEY 등을 설정
 
 # 2. 의존성 설치
 pip install -r requirements.txt
@@ -69,6 +69,39 @@ uvicorn app.main:app --reload --port 8000
 # 4. API 문서 확인
 # http://localhost:8000/docs
 ```
+
+## Gemini 식단 이미지 분석 설정
+
+`POST /api/v1/diet/analyze`는 Gemini REST API로 식단 이미지를 분석합니다. Google SDK는 사용하지 않고 서버가 검증된 이미지 URL을 다운로드한 뒤 기존 `httpx` 의존성으로 Gemini `generateContent`에 inline image data를 전송합니다.
+
+`.env`에 다음 값을 설정하세요. 실제 API 키는 커밋하지 말고 로컬 `.env` 또는 배포 secret으로만 관리합니다.
+
+| 변수 | 설명 | 기본값/예시 |
+|------|------|-------------|
+| `GEMINI_API_KEY` | Gemini API 키. 빈 값, `dummy-key`, `your-ai-api-key`, `your-gemini-api-key`는 미설정으로 처리 | `your-gemini-api-key` |
+| `GEMINI_MODEL` | 이미지 입력을 지원하는 Gemini 모델 | `gemini-2.5-flash` |
+| `GEMINI_API_BASE_URL` | Gemini REST API base URL | `https://generativelanguage.googleapis.com/v1beta` |
+| `GEMINI_REQUEST_TIMEOUT_SECONDS` | Gemini/image HTTP 요청 timeout | `20` |
+| `GEMINI_IMAGE_MAX_BYTES` | inline image data 최대 바이트 수 | `10485760` |
+
+지원 이미지 MIME 타입은 `image/png`, `image/jpeg`, `image/webp`, `image/heic`, `image/heif`입니다. SSRF 방지를 위해 HTTPS URL만 허용하고 localhost/private/link-local/metadata 등 내부 네트워크 대상 및 리다이렉트는 거부합니다. DNS 검증 후 실제 이미지 다운로드는 검증된 IP에 연결하고 원본 hostname은 TLS SNI/Host에만 사용해 DNS 리바인딩 TOCTOU를 줄입니다. 분석 결과는 AI 추정치이며 의학적/영양학적 확정값이 아닙니다.
+
+### 식단 분석 요청 예시
+
+```http
+POST /api/v1/diet/analyze
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "image_url": "https://cdn.kelpus.com/diet/meal_001.jpg",
+  "diet_record_id": "550e8400-e29b-41d4-a716-446655440003"
+}
+```
+
+`diet_record_id`는 선택값이며 생략하면 이미지 URL로 새 식단 기록을 생성합니다. Gemini 설정 누락은 503, 이미지 URL/MIME/크기/내부 네트워크/리다이렉트 문제는 422, Gemini provider 오류는 502, timeout은 504로 처리됩니다. 실패 시 mock 분석값을 반환하지 않으며 사용량도 증가하지 않습니다.
 
 ## 구독 플랜
 
@@ -126,6 +159,20 @@ SELECT * FROM users; -- 전체 사용자 조회
 # 볼륨 포함 전체 초기화 (데이터 삭제 주의)
 docker compose down -v
 ```
+
+---
+
+## 테스트
+
+프로젝트 기본 의존성만 설치된 환경에서는 표준 라이브러리 `unittest`로 백엔드 오프라인 테스트를 실행할 수 있습니다.
+
+```bash
+cd backend
+python -m unittest tests.test_ai_analyzer tests.test_diet_service_ai_errors
+python -c "from app.main import app; print(app.title)"
+```
+
+Gemini 테스트는 `httpx.MockTransport`와 이미지 fetcher 주입을 사용하므로 실제 API 키, 외부 이미지 URL, live Gemini 호출이 필요하지 않습니다.
 
 ---
 

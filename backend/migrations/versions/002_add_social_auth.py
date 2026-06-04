@@ -22,7 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column("users", sa.Column("social_provider", sa.String(50), nullable=True))
     op.add_column("users", sa.Column("social_id", sa.String(255), nullable=True))
-    op.create_index("ix_users_social", "users", ["social_provider", "social_id"])
+    op.create_index("ix_users_social", "users", ["social_provider", "social_id"], unique=True)
     op.alter_column("users", "password_hash", nullable=True)
 
 

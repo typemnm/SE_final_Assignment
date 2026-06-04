@@ -1,9 +1,11 @@
 import {GoogleSignin, statusCodes} from 'react-native-google-signin';
 
 export const configureGoogleSignIn = (): void => {
-  GoogleSignin.configure({
-    webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
-  });
+  const webClientId = process.env.GOOGLE_WEB_CLIENT_ID;
+  if (!webClientId) {
+    throw new Error('GOOGLE_WEB_CLIENT_ID is not configured');
+  }
+  GoogleSignin.configure({webClientId});
 };
 
 export interface GoogleSignInResult {
