@@ -399,7 +399,7 @@ Content-Type: application/json
 
 1. JWT 인증 사용자 확인
 2. 구독 플랜의 일일 AI 분석 잔여 횟수 확인
-3. `diet_record_id`가 있으면 기존 식단 기록 연결, 없으면 `image_url`로 새 기록 생성
+3. `diet_record_id`가 있으면 기존 식단 기록 소유권/존재만 확인하고, 없으면 분석 성공 후 `image_url`로 새 기록 생성
 4. 서버에서 `image_url` HTTPS/호스트 안전성, MIME, 크기 검증
 5. Gemini `gemini-2.5-flash` REST API에 inline image data 전송
 6. structured JSON output을 칼로리/탄단지/AI 코멘트로 검증 후 저장
