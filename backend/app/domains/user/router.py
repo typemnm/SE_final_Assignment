@@ -58,12 +58,39 @@ async def refresh(
 
 
 @auth_router.post(
+    "/social",
+    response_model=schemas.TokenResponse,
+    summary="소셜 로그인",
+    description="Google, Apple, Kakao 소셜 계정으로 로그인하거나 자동 회원가입한다.",
+)
+async def social_login(
+    req: schemas.SocialLoginRequest,
+    db: AsyncSession = Depends(get_db),
+) -> schemas.TokenResponse:
+    return await service.social_login_user(req, db)
+
+
+@auth_router.post(
     "/logout",
     status_code=204,
     summary="로그아웃",
     description="클라이언트 측 토큰 삭제를 위한 엔드포인트 (서버는 상태 없음).",
 )
 async def logout() -> None:
+    return None
+
+
+@auth_router.delete(
+    "/account",
+    status_code=204,
+    summary="회원 탈퇴",
+    description="현재 인증된 사용자의 계정과 모든 데이터를 영구 삭제한다.",
+)
+async def delete_account(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await service.delete_account(current_user["user_id"], db)
     return None
 
 

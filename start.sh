@@ -176,6 +176,11 @@ if ! .venv/bin/python -c "import fastapi" &>/dev/null 2>&1; then
   .venv/bin/python -m pip install -r requirements.txt -q
 fi
 
+log "DB 마이그레이션 실행 중..."
+if ! PYTHONPATH=. .venv/bin/alembic upgrade head; then
+  error "Alembic 마이그레이션 실패. 위 로그를 확인하세요."
+fi
+
 log "시드 계정 확인 중..."
 if ! .venv/bin/python -m app.seed; then
   warn "시드 실패. DB 연결을 확인하세요 (서버는 계속 시작합니다)."

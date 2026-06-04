@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import AsyncSessionLocal, create_tables
+from app.database import AsyncSessionLocal
 from app.domains.user.models import SubscriptionPlan, SubscriptionTypeEnum, User
 from app.domains.user.repository import UserRepository
 
@@ -79,9 +79,6 @@ async def _seed(db: AsyncSession) -> None:
 
 
 async def main() -> None:
-    logger.info("테이블 생성 중...")
-    await create_tables()
-
     async with AsyncSessionLocal() as session:
         try:
             await _seed(session)
