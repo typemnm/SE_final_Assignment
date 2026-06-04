@@ -93,6 +93,33 @@ class DietRecordRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_for_user(
+        self,
+        record_id: str | uuid.UUID,
+        user_id: str | uuid.UUID,
+        db: AsyncSession,
+    ) -> DietRecord | None:
+        """
+        사용자 소유권까지 확인해 식단 기록을 조회한다.
+
+        Args:
+            record_id: 기록 UUID.
+            user_id: 사용자 UUID.
+            db: 비동기 DB 세션.
+
+        Returns:
+            해당 사용자 소유의 DietRecord 인스턴스 또는 None.
+        """
+        result = await db.execute(
+            select(DietRecord)
+            .where(
+                DietRecord.id == uuid.UUID(str(record_id)),
+                DietRecord.user_id == uuid.UUID(str(user_id)),
+            )
+            .options(selectinload(DietRecord.analysis_result))
+        )
+        return result.scalar_one_or_none()
+
     async def list_by_user(
         self, user_id: str | uuid.UUID, db: AsyncSession, limit: int = 20
     ) -> list[DietRecord]:

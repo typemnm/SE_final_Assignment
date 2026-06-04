@@ -372,61 +372,76 @@ Content-Type: application/json
 
 ### 2. 식단 AI 분석
 
+식단 이미지 URL을 Gemini API로 분석하고 현재 식단 분석 결과 스키마로 저장/반환합니다. 분석 결과는 AI 추정치이며 의학적·영양학적 확정값이 아닙니다.
+
 #### 요청
 ```http
-POST /diet/analyze
+POST /api/v1/diet/analyze
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
+> Base URL이 이미 `/api/v1`을 포함하는 클라이언트에서는 `/diet/analyze`로 호출합니다.
+
 ```json
 {
-  "diet_image_url": "https://cdn.kelpus.com/diet/meal_001.jpg",
-  "record_id": "550e8400-e29b-41d4-a716-446655440003"
+  "image_url": "https://cdn.kelpus.com/diet/meal_001.jpg",
+  "diet_record_id": "550e8400-e29b-41d4-a716-446655440003"
 }
 ```
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `image_url` | String | Y | 분석할 식단 이미지 URL |
+| `diet_record_id` | UUID | N | 연결할 기존 식단 기록 ID. 없으면 새 식단 기록 생성 |
+
+#### 처리 흐름
+
+1. JWT 인증 사용자 확인
+2. 구독 플랜의 일일 AI 분석 잔여 횟수 확인
+3. `diet_record_id`가 있으면 기존 식단 기록 소유권/존재만 확인하고, 없으면 분석 성공 후 `image_url`로 새 기록 생성
+4. 서버에서 `image_url` HTTPS/호스트 안전성, MIME, 크기 검증
+5. Gemini `gemini-2.5-flash` REST API에 inline image data 전송
+6. structured JSON output을 칼로리/탄단지/AI 코멘트로 검증 후 저장
+7. 저장 성공 후 일일 사용량 증가
 
 #### 응답 (200 OK)
 ```json
 {
-  "success": true,
-  "data": {
+  "id": "550e8400-e29b-41d4-a716-446655440010",
+  "diet_record_id": "550e8400-e29b-41d4-a716-446655440003",
+  "total_calories": 650.0,
+  "carb_ratio": 49.2,
+  "protein_ratio": 15.4,
+  "fat_ratio": 35.4,
+  "ai_comment": "탄수화물과 단백질 비율이 좋습니다. 채소를 더 추가하면 식이섬유 보충에 도움이 됩니다.",
+  "analyzed_at": "2024-05-24T10:30:00+00:00",
+  "visualization": {
     "analysis_id": "550e8400-e29b-41d4-a716-446655440010",
-    "record_id": "550e8400-e29b-41d4-a716-446655440003",
-    "total_calories": 650,
-    "protein_ratio": 15.4,
-    "carb_ratio": 49.2,
-    "fat_ratio": 24.9,
-    "ai_comment": "탄수화물과 단백질 비율이 좋습니다. 좀 더 섬유질을 추가하면 더 좋을 것 같습니다.",
-    "nutrition_details": {
-      "protein": 25,
-      "carbohydrate": 80,
-      "fat": 18,
-      "fiber": 4,
-      "sugar": 15
+    "total_calories": 650.0,
+    "macros": {
+      "carbohydrates": {"ratio": 49.2, "label": "탄수화물"},
+      "protein": {"ratio": 15.4, "label": "단백질"},
+      "fat": {"ratio": 35.4, "label": "지방"}
     },
-    "analysis_image_url": "https://cdn.kelpus.com/analysis/chart_001.png"
-  },
-  "message": "식단 분석이 완료되었습니다."
-}
-```
-
-#### 에러 응답 (402 Payment Required - 구독 제한)
-```json
-{
-  "success": false,
-  "error": {
-    "code": "SUBSCRIPTION_LIMIT_EXCEEDED",
-    "message": "일일 AI 분석 횟수를 초과했습니다.",
-    "data": {
-      "remaining_limit": 0,
-      "daily_limit": 3,
-      "plan_type": "FREE",
-      "upgrade_url": "https://kelpus.com/upgrade"
-    }
+    "ai_comment": "탄수화물과 단백질 비율이 좋습니다. 채소를 더 추가하면 식이섬유 보충에 도움이 됩니다.",
+    "analyzed_at": "2024-05-24T10:30:00+00:00"
   }
 }
 ```
+
+#### 에러 응답
+
+| 상태 코드 | 조건 | 설명 |
+|-----------|------|------|
+| 402 | 구독 제한 | 일일 AI 분석 횟수 초과 |
+| 404 | 구독/식단 기록 없음 | 구독 플랜 또는 연결할 식단 기록을 찾을 수 없음 |
+| 422 | 이미지 처리 실패 | HTTPS가 아닌 URL, 내부 네트워크/metadata URL, 리다이렉트, 이미지 다운로드 실패, MIME 미지원, 빈 파일, 크기 초과 |
+| 502 | Gemini provider/응답 실패 | Gemini HTTP 오류 또는 structured output 파싱/검증 실패 |
+| 503 | 서버 설정 누락 | `GEMINI_API_KEY` 미설정 또는 placeholder 값 |
+| 504 | Gemini timeout | Gemini API 요청 시간 초과 |
+
+실패 시 mock 분석값을 반환하지 않고, 분석 결과 저장 및 사용량 증가는 수행하지 않습니다. SSRF 방지를 위해 localhost/private/link-local/multicast/reserved/metadata 대상과 리다이렉트는 허용하지 않으며, DNS 검증 결과의 공인 IP로 직접 연결해 다운로드 시점 DNS 리바인딩을 줄입니다.
 
 ---
 

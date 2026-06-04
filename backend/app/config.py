@@ -19,7 +19,14 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
 
-    # AI 분석 서비스
+    # AI 분석 서비스 (Gemini REST)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_API_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
+    GEMINI_REQUEST_TIMEOUT_SECONDS: float = 20.0
+    GEMINI_IMAGE_MAX_BYTES: int = 10 * 1024 * 1024
+
+    # 이전 provider-generic 이름은 하위 호환을 위해 유지하되 Gemini 연동에는 사용하지 않는다.
     AI_ANALYSIS_API_KEY: str = "dummy-key"
     AI_ANALYSIS_BASE_URL: str = "https://api.openai.com/v1"
 
