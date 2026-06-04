@@ -289,7 +289,7 @@ class AIAnalyzerService:
     async def _fetch_image(self, validated_url: _ValidatedImageURL) -> _DownloadedImage:
         if self._image_fetcher is not None:
             result = self._image_fetcher(validated_url)
-            if asyncio.iscoroutine(result):
+            if isinstance(result, Awaitable):
                 return await result
             return result
 
