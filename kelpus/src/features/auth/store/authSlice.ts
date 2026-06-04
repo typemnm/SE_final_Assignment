@@ -26,9 +26,20 @@ const initialState: AuthState = {
 export const initAuthThunk = createAsyncThunk('auth/init', async () => {
   const accessToken = await getAccessToken();
   if (!accessToken) return null;
+
   const userJson = await getStorage('auth_user');
-  if (!userJson) return null;
-  return {user: JSON.parse(userJson) as User, accessToken};
+  if (!userJson) {
+    await clearTokens();
+    return null;
+  }
+
+  try {
+    return {user: JSON.parse(userJson) as User, accessToken};
+  } catch {
+    await clearTokens();
+    await removeStorage('auth_user');
+    return null;
+  }
 });
 
 export const loginThunk = createAsyncThunk('auth/login', async (data: LoginRequest, {rejectWithValue}) => {
