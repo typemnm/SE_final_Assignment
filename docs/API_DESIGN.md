@@ -415,7 +415,7 @@ Content-Type: application/json
   "protein_ratio": 15.4,
   "fat_ratio": 35.4,
   "ai_comment": "탄수화물과 단백질 비율이 좋습니다. 채소를 더 추가하면 식이섬유 보충에 도움이 됩니다.",
-  "analyzed_at": "2024-05-24T10:30:00Z",
+  "analyzed_at": "2024-05-24T10:30:00+00:00",
   "visualization": {
     "analysis_id": "550e8400-e29b-41d4-a716-446655440010",
     "total_calories": 650.0,
