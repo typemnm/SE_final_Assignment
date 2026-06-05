@@ -171,10 +171,10 @@ fi
 
 ensure_venv_pip
 
-if ! .venv/bin/python -c "import fastapi" &>/dev/null 2>&1; then
-  log "백엔드 패키지 설치 중..."
-  .venv/bin/python -m pip install -r requirements.txt -q
-fi
+log "백엔드 패키지 확인 중..."
+# fastapi 존재 여부만 보면 기존 가상환경의 transitive dependency(bcrypt 등)
+# 호환성 깨짐을 놓칠 수 있으므로 requirements.txt의 고정 버전을 매번 반영한다.
+.venv/bin/python -m pip install -r requirements.txt -q
 
 log "DB 마이그레이션 실행 중..."
 if ! PYTHONPATH=. .venv/bin/alembic upgrade head; then
@@ -199,7 +199,11 @@ cd "$FRONTEND_DIR"
 
 if [ ! -d node_modules ]; then
   log "프론트엔드 패키지 설치 중..."
-  npm install --silent
+  if [ -f package-lock.json ]; then
+    HUSKY=0 npm ci --silent
+  else
+    HUSKY=0 npm install --silent
+  fi
 fi
 
 free_port 8080
