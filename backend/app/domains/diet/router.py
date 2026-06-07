@@ -94,11 +94,14 @@ async def upload_diet_image(
         )
 
     contents = await _read_limited_upload(file)
+    await file.close()
+
+    import asyncio
 
     _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid4().hex}{extension}"
     destination = _UPLOAD_DIR / filename
-    destination.write_bytes(contents)
+    await asyncio.to_thread(destination.write_bytes, contents)
 
     return schemas.DietImageUploadResponse(
         diet_image_url=f"/static/diet_uploads/{filename}",
