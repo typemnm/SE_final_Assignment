@@ -77,13 +77,13 @@ async def analyze_diet(
     if not plan.check_remaining_count():
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="일일 AI 분석 한도를 초과했습니다. 구독 플랜을 업그레이드하세요.",
+            detail="일일 AI 분석 한도를 초과했습니다. 내일 다시 시도하세요.",
         )
 
-    # 2. 식단 기록 존재만 확인하고 외부 AI 호출 전 DB 트랜잭션을 닫는다.
-    if req.diet_record_id:
+    # 2. 기존 record_id가 주어진 경우 현재 사용자 소유 기록인지 먼저 확인한다.
+    if req.record_id:
         existing = await _diet_record_repo.get_by_id_for_user(
-            req.diet_record_id,
+            req.record_id,
             user_id,
             db,
         )
@@ -105,7 +105,7 @@ async def analyze_diet(
 
     # 3. AI 분석 엔진 호출 (식단_이미지_분석)
     try:
-        analysis_data = await _ai_analyzer.analyze_image(req.image_url)
+        analysis_data = await _ai_analyzer.analyze_image(req.diet_image_url)
     except AIAnalysisError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
@@ -119,19 +119,19 @@ async def analyze_diet(
     if not plan.check_remaining_count():
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="일일 AI 분석 한도를 초과했습니다. 구독 플랜을 업그레이드하세요.",
+            detail="일일 AI 분석 한도를 초과했습니다. 내일 다시 시도하세요.",
         )
 
     if should_create_record:
         record = await _diet_record_repo.create_with_image(
             user_id=user_id,
-            image_url=req.image_url,
+            image_url=req.diet_image_url,
             db=db,
         )
         diet_record_id = record.id
     else:
         existing = await _diet_record_repo.get_by_id_for_user(
-            req.diet_record_id,
+            req.record_id,
             user_id,
             db,
         )
@@ -154,8 +154,8 @@ async def analyze_diet(
     await db.flush()
 
     return DietAnalysisResponse(
-        id=analysis_result.id,
-        diet_record_id=analysis_result.diet_record_id,
+        analysis_id=analysis_result.id,
+        record_id=analysis_result.diet_record_id,
         total_calories=analysis_result.total_calories,
         carb_ratio=analysis_result.carb_ratio,
         protein_ratio=analysis_result.protein_ratio,

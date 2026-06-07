@@ -1,6 +1,7 @@
+import {useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import type {AppDispatch, RootState} from '@store/index';
-import {setRecords, selectRecord, setLeaderboard, setLeaderboardEntries, setLoading} from '../store/runningSlice';
+import {setRecords, selectRecord, setLeaderboardEntries, setLoading} from '../store/runningSlice';
 import {runningApi} from '@api/running.api';
 import type {LeaderboardCriterion, LeaderboardPeriod, RunningRecord} from '@appTypes/running.types';
 
@@ -10,7 +11,7 @@ export const useRunning = () => {
     (state: RootState) => state.running,
   );
 
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     dispatch(setLoading(true));
     try {
       const res = await runningApi.getRunningRecords();
@@ -18,15 +19,30 @@ export const useRunning = () => {
     } finally {
       dispatch(setLoading(false));
     }
+  }, [dispatch]);
+
+  const fetchLeaderboard = useCallback(
+    async (period: LeaderboardPeriod, criterion: LeaderboardCriterion) => {
+      const res = await runningApi.getLeaderboard(period, criterion);
+      // 리더보드 목록 저장
+      dispatch(setLeaderboardEntries(res.data));
+    },
+    [dispatch],
+  );
+
+  const selectRunning = useCallback(
+    (record: RunningRecord) => dispatch(selectRecord(record)),
+    [dispatch],
+  );
+
+  return {
+    records,
+    selectedRecord,
+    leaderboard,
+    leaderboardEntries,
+    loading,
+    fetchRecords,
+    fetchLeaderboard,
+    selectRunning,
   };
-
-  const fetchLeaderboard = async (period: LeaderboardPeriod, criterion: LeaderboardCriterion) => {
-    const res = await runningApi.getLeaderboard(period, criterion);
-    // 리더보드 목록 저장
-    dispatch(setLeaderboardEntries(res.data));
-  };
-
-  const selectRunning = (record: RunningRecord) => dispatch(selectRecord(record));
-
-  return {records, selectedRecord, leaderboard, leaderboardEntries, loading, fetchRecords, fetchLeaderboard, selectRunning};
 };

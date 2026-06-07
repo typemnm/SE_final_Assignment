@@ -80,6 +80,17 @@
       "node"
     ],
     "moduleNameMapper": {
+      "^react-redux$": "<rootDir>/node_modules/react-redux/dist/cjs/index.js",
+      "^immer$": "<rootDir>/node_modules/immer/dist/cjs/index.js",
+      "^react-native-keychain$": "<rootDir>/src/shims/react-native-keychain.js",
+      "^react-native-google-signin$": "<rootDir>/src/shims/react-native-google-signin.js",
+      "^@invertase/react-native-apple-authentication$": "<rootDir>/src/shims/react-native-apple-authentication.js",
+      "^@react-native-kakao/user$": "<rootDir>/src/shims/react-native-kakao-user.js",
+      "^@react-native-async-storage/async-storage$": "<rootDir>/src/shims/react-native-async-storage.js",
+      "^react-native-health-connect$": "<rootDir>/src/shims/react-native-health-connect.js",
+      "^react-native-maps$": "<rootDir>/src/shims/react-native-maps.js",
+      "^react-native-permissions$": "<rootDir>/src/shims/react-native-permissions.js",
+      "^react-native-vector-icons/(.*)$": "<rootDir>/src/shims/react-native-vector-icons.js",
       "^@components/(.*)$": "<rootDir>/src/components/$1",
       "^@features/(.*)$": "<rootDir>/src/features/$1",
       "^@store/(.*)$": "<rootDir>/src/store/$1",
@@ -87,8 +98,12 @@
       "^@appTypes/(.*)$": "<rootDir>/src/types/$1",
       "^@utils/(.*)$": "<rootDir>/src/utils/$1",
       "^@api/(.*)$": "<rootDir>/src/api/$1",
-      "^@navigation/(.*)$": "<rootDir>/src/navigation/$1"
-    }
+      "^@navigation/(.*)$": "<rootDir>/src/navigation/$1",
+      "\\.(png|jpg|jpeg|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
+    },
+    "setupFiles": [
+      "react-native-gesture-handler/jestSetup"
+    ]
   },
   "lint-staged": {
     "*.{ts,tsx}": [
