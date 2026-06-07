@@ -8,7 +8,9 @@ import {formatDistance, formatDuration, formatDate} from '@utils/format';
 export const RunningScreen = () => {
   const {records, loading, fetchRecords} = useRunning();
 
-  useEffect(() => { fetchRecords(); }, []);
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   if (loading) return <LoadingSpinner fullScreen />;
 
@@ -37,9 +39,19 @@ export const RunningScreen = () => {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background, padding: spacing.md},
   title: {...typography.h2, color: colors.text.primary, marginBottom: spacing.md},
-  item: {backgroundColor: colors.surface, borderRadius: 8, padding: spacing.md, marginBottom: spacing.sm},
+  item: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
   date: {...typography.body2, color: colors.text.secondary, marginBottom: spacing.xs},
   stats: {flexDirection: 'row', justifyContent: 'space-between'},
   stat: {...typography.body1, color: colors.text.primary},
-  empty: {...typography.body1, color: colors.text.disabled, textAlign: 'center', marginTop: spacing.xl},
+  empty: {
+    ...typography.body1,
+    color: colors.text.disabled,
+    textAlign: 'center',
+    marginTop: spacing.xl,
+  },
 });

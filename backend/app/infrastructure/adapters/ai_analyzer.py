@@ -17,6 +17,7 @@ import socket
 import ssl
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 
@@ -32,6 +33,14 @@ SUPPORTED_IMAGE_MIME_TYPES = {
     "image/webp",
     "image/heic",
     "image/heif",
+}
+STATIC_DIET_UPLOAD_PREFIX = "/static/diet_uploads/"
+STATIC_DIET_UPLOAD_DIR = Path(__file__).resolve().parents[3] / "static" / "diet_uploads"
+STATIC_DIET_UPLOAD_MIME_TYPES = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
 }
 PLACEHOLDER_API_KEYS = {
     "",
@@ -152,10 +161,9 @@ class AIAnalyzerService:
         """
         logger.info("AI 이미지 분석 시작: %s", self._redact_url(image_url))
         self._ensure_configured()
-        validated_url = self._validate_image_url(image_url)
 
         async with self._create_client() as client:
-            image = await self._fetch_image(validated_url)
+            image = await self._load_image(image_url)
             payload = self._build_gemini_payload(image)
             response_data = await self._post_to_gemini(client, payload)
 
@@ -184,6 +192,69 @@ class AIAnalyzerService:
                 status_code=503,
                 detail="Gemini API Base URL 설정이 비어 있습니다.",
             )
+
+    async def _load_image(self, image_url: str) -> _DownloadedImage:
+        if image_url.startswith(STATIC_DIET_UPLOAD_PREFIX):
+            return await asyncio.to_thread(self._read_static_upload_image, image_url)
+
+        validated_url = self._validate_image_url(image_url)
+        return await self._fetch_image(validated_url)
+
+    def _read_static_upload_image(self, image_url: str) -> _DownloadedImage:
+        parsed = urlparse(image_url)
+        if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="업로드 이미지 경로가 올바르지 않습니다.",
+            )
+
+        relative_name = parsed.path.removeprefix(STATIC_DIET_UPLOAD_PREFIX)
+        if not relative_name or "/" in relative_name:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="업로드 이미지 경로가 올바르지 않습니다.",
+            )
+
+        image_path = (STATIC_DIET_UPLOAD_DIR / relative_name).resolve()
+        upload_dir = STATIC_DIET_UPLOAD_DIR.resolve()
+        if image_path.parent != upload_dir:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="업로드 이미지 경로가 올바르지 않습니다.",
+            )
+
+        mime_type = STATIC_DIET_UPLOAD_MIME_TYPES.get(image_path.suffix.lower())
+        if mime_type not in SUPPORTED_IMAGE_MIME_TYPES:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="지원하지 않는 업로드 이미지 형식입니다.",
+            )
+
+        try:
+            image_bytes = image_path.read_bytes()
+        except FileNotFoundError as exc:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="업로드 이미지를 찾을 수 없습니다.",
+            ) from exc
+        except OSError as exc:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="업로드 이미지를 읽을 수 없습니다.",
+            ) from exc
+
+        if not image_bytes:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="이미지 파일이 비어 있습니다.",
+            )
+        if len(image_bytes) > self._settings.GEMINI_IMAGE_MAX_BYTES:
+            raise AIAnalysisError(
+                status_code=422,
+                detail="이미지 파일 크기가 허용 한도를 초과했습니다.",
+            )
+
+        return _DownloadedImage(mime_type=mime_type, data=image_bytes)
 
     def _validate_image_url(self, image_url: str) -> _ValidatedImageURL:
         parsed = urlparse(image_url)

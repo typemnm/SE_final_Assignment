@@ -4,10 +4,12 @@ import {requestAnalysisThunk} from '../store/dietSlice';
 
 export const useDiet = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const {records, currentAnalysis, analysisHistory, analyzing, error} = useSelector((state: RootState) => state.diet);
+  const {records, currentAnalysis, analysisHistory, analyzing, error} = useSelector(
+    (state: RootState) => state.diet,
+  );
 
-  const requestAnalysis = async (profileId: string, date: string) => {
-    await dispatch(requestAnalysisThunk({profileId, date}));
+  const requestAnalysis = async (dietImageUrl: string, recordId?: string) => {
+    await dispatch(requestAnalysisThunk({dietImageUrl, recordId}));
   };
 
   return {records, currentAnalysis, analysisHistory, analyzing, error, requestAnalysis};

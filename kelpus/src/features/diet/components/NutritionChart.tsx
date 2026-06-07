@@ -6,23 +6,48 @@ interface NutritionChartProps {
   protein: number;
   carbs: number;
   fat: number;
+  unit?: 'g' | '%';
+  title?: string;
 }
 
-export const NutritionChart = ({protein, carbs, fat}: NutritionChartProps) => {
+const MACRO_ITEMS = [
+  {key: 'protein', label: '단백질', color: '#4CAF50'},
+  {key: 'carbs', label: '탄수화물', color: '#2196F3'},
+  {key: 'fat', label: '지방', color: '#FF5722'},
+] as const;
+
+export const NutritionChart = ({
+  protein,
+  carbs,
+  fat,
+  unit = 'g',
+  title = '영양소 구성',
+}: NutritionChartProps) => {
   const total = protein + carbs + fat || 1;
+  const macroValues = {protein, carbs, fat};
+  const formatValue = (value: number) => `${Math.round(value * 10) / 10}${unit}`;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>영양소 구성</Text>
+      <Text style={styles.title}>{title}</Text>
       <View style={styles.bar}>
-        <View style={[styles.segment, {flex: protein / total, backgroundColor: '#4CAF50'}]} />
-        <View style={[styles.segment, {flex: carbs / total, backgroundColor: '#2196F3'}]} />
-        <View style={[styles.segment, {flex: fat / total, backgroundColor: '#FF5722'}]} />
+        {MACRO_ITEMS.map(item => (
+          <View
+            key={item.key}
+            style={[
+              styles.segment,
+              {flex: macroValues[item.key] / total, backgroundColor: item.color},
+            ]}
+          />
+        ))}
       </View>
       <View style={styles.legend}>
-        {[{label: '단백질', value: protein, color: '#4CAF50'}, {label: '탄수화물', value: carbs, color: '#2196F3'}, {label: '지방', value: fat, color: '#FF5722'}].map(item => (
+        {MACRO_ITEMS.map(item => (
           <View key={item.label} style={styles.legendItem}>
             <View style={[styles.dot, {backgroundColor: item.color}]} />
-            <Text style={styles.legendText}>{item.label}: {item.value}g</Text>
+            <Text style={styles.legendText}>
+              {item.label}: {formatValue(macroValues[item.key])}
+            </Text>
           </View>
         ))}
       </View>
@@ -31,12 +56,28 @@ export const NutritionChart = ({protein, carbs, fat}: NutritionChartProps) => {
 };
 
 const styles = StyleSheet.create({
-  container: {backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.md},
+  container: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
   title: {...typography.body1, color: colors.text.primary, marginBottom: spacing.sm},
-  bar: {flexDirection: 'row', height: 20, borderRadius: 10, overflow: 'hidden', marginBottom: spacing.sm},
+  bar: {
+    flexDirection: 'row',
+    height: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
   segment: {height: '100%'},
   legend: {flexDirection: 'row', flexWrap: 'wrap'},
-  legendItem: {flexDirection: 'row', alignItems: 'center', marginRight: spacing.md, marginBottom: spacing.xs},
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: spacing.md,
+    marginBottom: spacing.xs,
+  },
   dot: {width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs},
   legendText: {...typography.caption, color: colors.text.secondary},
 });

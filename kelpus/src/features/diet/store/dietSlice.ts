@@ -11,14 +11,37 @@ interface DietState {
   error: string | null;
 }
 
-const initialState: DietState = {records: [], analysisHistory: [], currentAnalysis: null, loading: false, analyzing: false, error: null};
+interface RequestAnalysisArgs {
+  dietImageUrl: string;
+  recordId?: string;
+}
 
-export const requestAnalysisThunk = createAsyncThunk('diet/analyze', async ({profileId, date}: {profileId: string; date: string}, {getState, rejectWithValue}) => {
+const initialState: DietState = {
+  records: [],
+  analysisHistory: [],
+  currentAnalysis: null,
+  loading: false,
+  analyzing: false,
+  error: null,
+};
+
+const getErrorStatus = (err: unknown): number | undefined =>
+  (err as {response?: {status?: number}}).response?.status;
+
+export const requestAnalysisThunk = createAsyncThunk<
+  DietAnalysisResult,
+  RequestAnalysisArgs,
+  {rejectValue: string}
+>('diet/analyze', async ({dietImageUrl, recordId}, {rejectWithValue}) => {
   try {
-    const state = getState() as {diet: DietState};
-    const response = await dietApi.requestAnalysis({dietRecords: state.diet.records, profileId, date});
-    return response.data;
+    return await dietApi.requestAnalysis({
+      diet_image_url: dietImageUrl,
+      ...(recordId ? {record_id: recordId} : {}),
+    });
   } catch (err: unknown) {
+    if (getErrorStatus(err) === 402) {
+      return rejectWithValue('일일 AI 분석 한도를 초과했습니다. 내일 다시 시도하세요.');
+    }
     return rejectWithValue('AI 분석 요청에 실패했습니다.');
   }
 });
@@ -27,12 +50,19 @@ const dietSlice = createSlice({
   name: 'diet',
   initialState,
   reducers: {
-    setRecords: (state, action: PayloadAction<DietRecord[]>) => { state.records = action.payload; },
-    clearError: state => { state.error = null; },
+    setRecords: (state, action: PayloadAction<DietRecord[]>) => {
+      state.records = action.payload;
+    },
+    clearError: state => {
+      state.error = null;
+    },
   },
   extraReducers: builder => {
     builder
-      .addCase(requestAnalysisThunk.pending, state => { state.analyzing = true; state.error = null; })
+      .addCase(requestAnalysisThunk.pending, state => {
+        state.analyzing = true;
+        state.error = null;
+      })
       .addCase(requestAnalysisThunk.fulfilled, (state, action) => {
         state.analyzing = false;
         state.currentAnalysis = action.payload;
@@ -40,7 +70,7 @@ const dietSlice = createSlice({
       })
       .addCase(requestAnalysisThunk.rejected, (state, action) => {
         state.analyzing = false;
-        state.error = action.payload as string;
+        state.error = action.payload ?? 'AI 분석 요청에 실패했습니다.';
       });
   },
 });

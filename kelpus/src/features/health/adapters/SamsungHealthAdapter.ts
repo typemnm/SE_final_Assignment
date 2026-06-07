@@ -1,10 +1,30 @@
-import {
-  initialize,
-  requestPermission,
-  readRecords,
-} from 'react-native-health-connect';
+import {initialize, requestPermission, readRecords} from 'react-native-health-connect';
 import type {HealthAdapter} from './HealthAdapter';
 import type {HealthDietRecord, HealthRunningRecord, GpsPoint} from '@appTypes/health.types';
+
+type HealthConnectLength = {
+  value: number;
+  unit: 'meters' | 'kilometers' | 'miles' | 'inches' | 'feet';
+};
+
+const toMeters = (length?: HealthConnectLength): number | undefined => {
+  if (!length) {
+    return undefined;
+  }
+
+  switch (length.unit) {
+    case 'meters':
+      return length.value;
+    case 'kilometers':
+      return length.value * 1000;
+    case 'miles':
+      return length.value * 1609.344;
+    case 'feet':
+      return length.value * 0.3048;
+    case 'inches':
+      return length.value * 0.0254;
+  }
+};
 
 // Android Health Connect API 기반 어댑터
 // Samsung Health는 Android 14+에서 Health Connect와 자동 연동됩니다.
@@ -17,10 +37,12 @@ export class SamsungHealthAdapter implements HealthAdapter {
   async requestPermissions(): Promise<boolean> {
     try {
       const isInitialized = await initialize();
-      if (!isInitialized) return false;
+      if (!isInitialized) {
+        return false;
+      }
 
       const granted = await requestPermission([
-        {accessType: 'read', recordType: 'NutritionRecord'},
+        {accessType: 'read', recordType: 'Nutrition'},
         {accessType: 'read', recordType: 'ExerciseSession'},
         {accessType: 'read', recordType: 'Distance'},
         {accessType: 'read', recordType: 'TotalCaloriesBurned'},
@@ -35,7 +57,7 @@ export class SamsungHealthAdapter implements HealthAdapter {
 
   async getDietRecords(startDate: Date, endDate: Date): Promise<HealthDietRecord[]> {
     try {
-      const {records} = await readRecords('NutritionRecord', {
+      const {records} = await readRecords('Nutrition', {
         timeRangeFilter: {
           operator: 'between',
           startTime: startDate.toISOString(),
@@ -73,10 +95,10 @@ export class SamsungHealthAdapter implements HealthAdapter {
       const runningRecords = records.filter(r => r.exerciseType === 37);
 
       return runningRecords.map(r => {
-        const route: GpsPoint[] = (r.route?.routeLocations ?? []).map((loc: {latitude: number; longitude: number; altitude?: {inMeters: number}; time: string}) => ({
+        const route: GpsPoint[] = (r.exerciseRoute?.route ?? []).map(loc => ({
           latitude: loc.latitude,
           longitude: loc.longitude,
-          altitude: loc.altitude?.inMeters,
+          altitude: toMeters(loc.altitude),
           timestamp: loc.time,
         }));
 

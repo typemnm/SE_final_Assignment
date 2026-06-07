@@ -18,22 +18,50 @@ export interface FoodItem {
 }
 
 export interface DietAnalysisRequest {
-  dietRecords: DietRecord[];
-  profileId: string;
-  date: string;
+  diet_image_url: string;
+  record_id?: string;
 }
 
 export interface DietAnalysisResult {
-  id: string;
-  date: string;
-  calorieBalance: number;
-  nutritionScore: number;
-  suggestions: string[];
-  nutrients: {
-    protein: number;
-    carbs: number;
-    fat: number;
-    fiber: number;
+  analysis_id: string;
+  record_id: string;
+  total_calories: number;
+  carb_ratio: number;
+  protein_ratio: number;
+  fat_ratio: number;
+  ai_comment: string | null;
+  analyzed_at: string;
+  visualization?: DietAnalysisVisualization;
+  nutrition_details?: NutritionDetails;
+}
+
+export interface DietAnalysisVisualization {
+  analysis_id?: string;
+  total_calories?: number;
+  macros?: {
+    carbohydrates?: MacroVisualization;
+    protein?: MacroVisualization;
+    fat?: MacroVisualization;
   };
-  createdAt: string;
+  ai_comment?: string | null;
+  analyzed_at?: string | null;
+}
+
+export interface MacroVisualization {
+  ratio: number;
+  label: string;
+}
+
+export interface NutritionDetails {
+  protein?: number;
+  carbohydrate?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugar?: number;
+}
+
+export interface DietImageUploadResponse {
+  diet_image_url: string;
+  message: string;
 }
