@@ -176,7 +176,62 @@ log "백엔드 패키지 확인 중..."
 # 호환성 깨짐을 놓칠 수 있으므로 requirements.txt의 고정 버전을 매번 반영한다.
 .venv/bin/python -m pip install -r requirements.txt -q
 
+bootstrap_existing_schema_for_alembic() {
+  local baseline=""
+
+  # 이전 버전의 개발 서버는 SQLAlchemy create_all()로 테이블을 먼저 만들었고,
+  # 그 DB에는 alembic_version 테이블이 없다. 이 상태에서 001을 실행하면
+  # relation "users" already exists 로 실패하므로 기존 users 스키마 수준에 맞게
+  # Alembic 기준 revision만 기록한 뒤 누락된 후속 migration을 적용한다.
+  baseline=$(.venv/bin/python - <<'PY'
+import asyncio
+import os
+
+from sqlalchemy import inspect
+from sqlalchemy.ext.asyncio import create_async_engine
+
+
+async def main() -> None:
+    engine = create_async_engine(os.environ["DATABASE_URL"])
+    try:
+        async with engine.connect() as conn:
+            has_version = await conn.run_sync(
+                lambda sync_conn: inspect(sync_conn).has_table("alembic_version")
+            )
+            if has_version:
+                return
+
+            has_users = await conn.run_sync(
+                lambda sync_conn: inspect(sync_conn).has_table("users")
+            )
+            if not has_users:
+                return
+
+            columns = await conn.run_sync(
+                lambda sync_conn: {
+                    column["name"] for column in inspect(sync_conn).get_columns("users")
+                }
+            )
+            if {"social_provider", "social_id"}.issubset(columns):
+                print("002")
+            else:
+                print("001")
+    finally:
+        await engine.dispose()
+
+
+asyncio.run(main())
+PY
+)
+
+  if [ -n "$baseline" ]; then
+    warn "기존 DB 테이블이 Alembic 버전 없이 존재함 → revision $baseline 로 기준점 기록"
+    PYTHONPATH=. .venv/bin/alembic stamp "$baseline"
+  fi
+}
+
 log "DB 마이그레이션 실행 중..."
+bootstrap_existing_schema_for_alembic
 if ! PYTHONPATH=. .venv/bin/alembic upgrade head; then
   error "Alembic 마이그레이션 실패. 위 로그를 확인하세요."
 fi
