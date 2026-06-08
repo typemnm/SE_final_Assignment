@@ -25,7 +25,13 @@ interface AnimatedRouteMapProps {
 
 const g = globalThis as any;
 
-/** Naver Maps JS SDK를 동적으로 한 번만 로드 */
+/**
+ * Naver Maps JS SDK 로드.
+ * onload 대신 SDK 공식 callback 파라미터를 사용 —
+ * naver.maps 내부 초기화가 완전히 끝난 뒤 callback이 호출되므로
+ * "naver.maps is null" 레이스 컨디션이 발생하지 않는다.
+ */
+const CALLBACK_NAME = '__naverMapsReady__';
 let naverMapsPromise: Promise<void> | null = null;
 const loadNaverMaps = (): Promise<void> => {
   if (g.naver?.maps) return Promise.resolve();
@@ -33,12 +39,20 @@ const loadNaverMaps = (): Promise<void> => {
 
   naverMapsPromise = new Promise<void>((resolve, reject) => {
     if (!g.document) return reject(new Error('No document'));
+
+    g[CALLBACK_NAME] = () => {
+      delete g[CALLBACK_NAME];
+      resolve();
+    };
+
     const script = g.document.createElement('script');
     script.type = 'text/javascript';
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_MAPS_CLIENT_ID}`;
-    script.onload = () => resolve();
+    script.src =
+      `https://oapi.map.naver.com/openapi/v3/maps.js` +
+      `?ncpKeyId=${NAVER_MAPS_CLIENT_ID}&callback=${CALLBACK_NAME}`;
     script.onerror = () => {
       naverMapsPromise = null;
+      delete g[CALLBACK_NAME];
       reject(new Error('Naver Maps 스크립트 로드 실패'));
     };
     g.document.head.appendChild(script);
@@ -115,6 +129,9 @@ export const AnimatedRouteMap = ({
     const startMs = Date.now();
 
     timerRef.current = setInterval(() => {
+      // naver.maps가 예기치 않게 null이면 타이머를 중단 (방어 코드)
+      if (!naver?.maps) { stopTimer(); setPlaying(false); return; }
+
       const elapsed = Date.now() - startMs;
       const progress = Math.min(elapsed / animationDuration, 1);
 
