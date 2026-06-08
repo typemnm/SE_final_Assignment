@@ -31,6 +31,7 @@ module.exports = {
       'react-native-google-signin': path.resolve(__dirname, 'src/shims/react-native-google-signin.js'),
       '@invertase/react-native-apple-authentication': path.resolve(__dirname, 'src/shims/react-native-apple-authentication.js'),
       '@react-native-kakao/user': path.resolve(__dirname, 'src/shims/react-native-kakao-user.js'),
+      'react-native-health': path.resolve(__dirname, 'src/shims/react-native-health.js'),
     },
   },
   module: {
@@ -74,9 +75,19 @@ module.exports = {
       /^react-native-vector-icons(\/.*)?$/,
       path.resolve(__dirname, 'src/shims/react-native-vector-icons.js'),
     ),
+    new webpack.NormalModuleReplacementPlugin(
+      /^@react-native\/assets-registry(\/.*)?$/,
+      path.resolve(__dirname, 'src/shims/assets-registry.js'),
+    ),
     new HtmlWebpackPlugin({
       template: './public/index.html',
     }),
+  ],
+  ignoreWarnings: [
+    {
+      module: /react-native-screens/,
+      message: /export 'FooterComponent'/,
+    },
   ],
   devServer: {
     port: 8080,
