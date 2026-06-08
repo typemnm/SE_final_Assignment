@@ -37,6 +37,9 @@ class RunningRecord(Base):
     distance: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     avg_pace: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     gps_coordinates: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    duration_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
+    calories: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     recorded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
