@@ -19,5 +19,12 @@ export type RunningStackParamList = {
   Leaderboard: undefined;
 };
 
+export type MyPageStackParamList = {
+  ProfileMain: undefined;
+  ProfileEdit: undefined;
+  Statistics: undefined;
+};
+
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 export type MainTabNavigationProp = BottomTabNavigationProp<MainTabParamList>;
+export type MyPageNavigationProp = NativeStackNavigationProp<MyPageStackParamList>;
