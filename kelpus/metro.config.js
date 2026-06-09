@@ -1,3 +1,12 @@
 const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
-const config = {};
+const exclusionList = require('metro-config/src/defaults/exclusionList');
+
+const config = {
+  resolver: {
+    blockList: exclusionList([
+      /(^|[/\\])\.omx[/\\].*/,
+    ]),
+  },
+};
+
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

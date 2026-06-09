@@ -15,3 +15,5 @@
 # 에디터
 .vscode/
 .idea/
+backend/static/diet_uploads/*
+!backend/static/diet_uploads/.gitkeep

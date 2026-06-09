@@ -1,7 +1,7 @@
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import type {MainTabParamList} from './types';
-import {DietScreen} from '@features/diet/screens/DietScreen';
+import {DietNavigator} from './DietNavigator';
 import {RunningScreen} from '@features/running/screens/RunningScreen';
 import {FeedScreen} from '@features/sns/screens/FeedScreen';
 import {MyPageNavigator} from './MyPageNavigator';
@@ -16,7 +16,7 @@ export const MainTabNavigator = () => {
         tabBarInactiveTintColor: '#999',
         headerShown: false,
       }}>
-      <Tab.Screen name="Diet" component={DietScreen} options={{tabBarLabel: '식단'}} />
+      <Tab.Screen name="Diet" component={DietNavigator} options={{tabBarLabel: '식단'}} />
       <Tab.Screen name="Running" component={RunningScreen} options={{tabBarLabel: '러닝'}} />
       <Tab.Screen name="Feed" component={FeedScreen} options={{tabBarLabel: 'SNS'}} />
       <Tab.Screen name="MyPage" component={MyPageNavigator} options={{tabBarLabel: '마이페이지'}} />

@@ -32,6 +32,7 @@ module.exports = {
       '@invertase/react-native-apple-authentication': path.resolve(__dirname, 'src/shims/react-native-apple-authentication.js'),
       '@react-native-kakao/user': path.resolve(__dirname, 'src/shims/react-native-kakao-user.js'),
       'react-native-health': path.resolve(__dirname, 'src/shims/react-native-health.js'),
+      'react-native-image-picker': path.resolve(__dirname, 'src/shims/react-native-image-picker.js'),
     },
   },
   module: {

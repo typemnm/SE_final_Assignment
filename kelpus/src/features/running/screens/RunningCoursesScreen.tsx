@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  TouchableOpacity,
 } from 'react-native';
 import {useRunning} from '../hooks/useRunning';
 import {LoadingSpinner} from '@components/common/LoadingSpinner';

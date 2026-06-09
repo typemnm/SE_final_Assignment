@@ -23,7 +23,7 @@ export const ProfileScreen = () => {
   useEffect(() => {
     fetchProfile();
     fetchSubscription();
-  }, []);
+  }, [fetchProfile, fetchSubscription]);
 
   if (profile.loading) {
     return (

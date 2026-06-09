@@ -1,8 +1,29 @@
 // Axios 인스턴스 + 인터셉터 (인증 토큰 발급 플로우 반영)
 import axios, {AxiosInstance, InternalAxiosRequestConfig} from 'axios';
+import {Platform} from 'react-native';
 import {getAccessToken, getRefreshToken, updateAccessToken, clearTokens} from '@utils/tokenStorage';
 
-const API_BASE_URL = process.env.API_BASE_URL || '';
+const getApiBaseUrl = (): string => {
+  const configuredUrl = process.env.API_BASE_URL;
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  if (__DEV__) {
+    // Web dev 서버는 webpack devServer proxy가 /api 요청을 백엔드로 전달한다.
+    if (Platform.OS === 'web') {
+      return '';
+    }
+
+    // 실제 Android 기기 테스트는 `adb reverse tcp:8000 tcp:8000` 기준으로 PC 백엔드에 연결한다.
+    // iOS 시뮬레이터도 localhost로 호스트 머신에 접근할 수 있다.
+    return 'http://localhost:8000';
+  }
+
+  return 'https://api.kelpus.com';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // 토큰 갱신 중 중복 요청 방지를 위한 큐
 let isRefreshing = false;

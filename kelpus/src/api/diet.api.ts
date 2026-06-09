@@ -31,7 +31,9 @@ export const dietApi = {
   uploadDietImage: async (data: FormData): Promise<DietImageUploadResponse> => {
     const response = await apiClient.post<
       DietImageUploadResponse | ApiEnvelope<DietImageUploadResponse>
-    >('/api/v1/diet/upload', data);
+    >('/api/v1/diet/upload', data, {
+      headers: {'Content-Type': 'multipart/form-data'},
+    });
     return unwrapApiData(response.data);
   },
   getAnalysisHistory: () => apiClient.get<DietAnalysisResult[]>('/api/v1/diet/history'),

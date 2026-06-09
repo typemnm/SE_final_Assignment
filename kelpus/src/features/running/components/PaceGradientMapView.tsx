@@ -1,7 +1,6 @@
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, useMemo} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
 import MapView, {Polyline, Marker} from 'react-native-maps';
-import {colors} from '@theme/index';
 import {buildPaceSegments} from '../utils';
 
 type RoutePoint = {
@@ -31,8 +30,11 @@ export const PaceGradientMapView = ({
     longitude: p.longitude ?? p.lng ?? 0,
   });
 
-  const coords = route.map(getCoord).filter(c => c.latitude !== 0 || c.longitude !== 0);
-  const segments = buildPaceSegments(route, avgPace);
+  const coords = useMemo(
+    () => route.map(getCoord).filter(c => c.latitude !== 0 || c.longitude !== 0),
+    [route],
+  );
+  const segments = useMemo(() => buildPaceSegments(route, avgPace), [route, avgPace]);
 
   useEffect(() => {
     if (coords.length > 0 && mapRef.current) {
@@ -50,7 +52,7 @@ export const PaceGradientMapView = ({
         longitudeDelta: maxLng - minLng + pad,
       }, 300);
     }
-  }, [coords.length]);
+  }, [coords]);
 
   if (coords.length === 0) {
     return (
