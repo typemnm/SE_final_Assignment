@@ -1,5 +1,15 @@
 import React from 'react';
 
+// React Native style arrays/numbers must be flattened before spreading into DOM style
+const flattenStyle = (style) => {
+  if (!style) return {};
+  if (Array.isArray(style)) {
+    return Object.assign({}, ...style.map(flattenStyle));
+  }
+  if (typeof style === 'number') return {}; // StyleSheet ID — skip on web
+  return style;
+};
+
 const MapView = ({ style, children }) =>
   React.createElement(
     'div',
@@ -9,7 +19,7 @@ const MapView = ({ style, children }) =>
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        ...style,
+        ...flattenStyle(style),
       },
     },
     React.createElement('span', { style: { color: '#666', fontSize: 14 } }, '지도 (웹 미지원)')

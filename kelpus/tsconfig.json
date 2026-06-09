@@ -1,5 +1,5 @@
 {
-  "extends": "@react-native/typescript-types/tsconfig.json",
+  "extends": "react-native/types/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
     "allowSyntheticDefaultImports": true,

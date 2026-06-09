@@ -6,10 +6,12 @@ lifespan 컨텍스트, CORS 미들웨어, 라우터 등록, 백그라운드 태�
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import create_tables
@@ -83,6 +85,15 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    # ─── 정적 식단 이미지 업로드 경로 ─────────────────────────────────────────
+    diet_upload_dir = Path(__file__).resolve().parents[1] / "static" / "diet_uploads"
+    diet_upload_dir.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        "/static/diet_uploads",
+        StaticFiles(directory=diet_upload_dir),
+        name="diet_uploads",
     )
 
     # ─── 라우터 등록 ──────────────────────────────────────────────────────────
