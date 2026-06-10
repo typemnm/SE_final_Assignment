@@ -21,6 +21,7 @@ export interface HealthRunningRecord {
   endTime: string;
   distance: number;
   calories: number;
+  durationSeconds?: number;
   route?: GpsPoint[];
 }
 

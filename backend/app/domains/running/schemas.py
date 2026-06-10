@@ -1,6 +1,5 @@
 """
 러닝 도메인 Pydantic v2 스키마.
-러닝 동기화, 리더보드 요청/응답 데이터 검증 및 직렬화를 담당한다.
 """
 
 import uuid
@@ -18,6 +17,9 @@ class RunningSyncRequest(BaseModel):
         default_factory=list,
         description="GPS 좌표 목록 ([{'lat': float, 'lng': float, 'timestamp': str}])",
     )
+    duration_seconds: int = Field(default=0, ge=0, description="총 소요 시간 (초)")
+    calories: int = Field(default=0, ge=0, description="소모 칼로리 (kcal)")
+    external_id: str | None = Field(None, description="헬스 앱 외부 기록 ID (중복 방지)")
     recorded_at: datetime | None = Field(None, description="기록 일시 (None이면 현재 시각)")
 
 
@@ -32,8 +34,21 @@ class RunningSyncResponse(BaseModel):
     message: str = Field(default="러닝 기록 동기화 완료")
 
 
+class RunningRecordResponse(BaseModel):
+    """러닝 기록 단일 응답 스키마 (프론트엔드 호환)."""
+
+    id: str
+    date: str
+    distance: float
+    duration: int
+    avgPace: float
+    calories: int
+    route: list[dict]
+    splitPaces: list[dict]
+
+
 class LeaderboardEntry(BaseModel):
-    """리더보드 단일 항목 스키마."""
+    """리더보드 단일 항목 스키마 (캐시 테이블용)."""
 
     model_config = {"from_attributes": True}
 
@@ -53,3 +68,48 @@ class LeaderboardResponse(BaseModel):
     total_users: int = Field(..., description="전체 참여자 수")
     my_rank: int | None = Field(None, description="현재 사용자의 순위")
     my_percentile: float | None = Field(None, description="현재 사용자의 상위 백분율")
+
+
+class LeaderboardListEntry(BaseModel):
+    """리더보드 목록용 항목 스키마 (프론트엔드 호환)."""
+
+    rank: int
+    userId: str
+    userName: str
+    value: float
+    badge: str | None = None
+    isCurrentUser: bool = False
+
+
+class LeaderboardListResponse(BaseModel):
+    """리더보드 목록 응답 스키마."""
+
+    entries: list[LeaderboardListEntry]
+    period: str
+    criterion: str
+    myRank: int | None = None
+    myValue: float | None = None
+
+
+class LeaderboardNearbyResponse(BaseModel):
+    """현재 사용자 주변 순위 응답 스키마."""
+
+    entries: list[LeaderboardListEntry]
+    myRank: int | None = None
+    myValue: float | None = None
+    totalUsers: int = 0
+    period: str
+    criterion: str
+
+
+class RunningCourseItem(BaseModel):
+    """추천 러닝 코스 스키마."""
+
+    id: str
+    name: str
+    distance: float
+    difficulty: str
+    description: str
+    location: str
+    estimatedTime: int
+    rating: float
