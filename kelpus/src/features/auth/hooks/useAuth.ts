@@ -12,7 +12,7 @@ import type {LoginRequest, SignUpRequest, SocialLoginRequest} from '@appTypes/au
 
 export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const {user, isAuthenticated, isInitialized, loading, error} = useSelector(
+  const {user, isAuthenticated, isInitialized, loading, deleteLoading, error} = useSelector(
     (state: RootState) => state.auth,
   );
 
@@ -23,5 +23,5 @@ export const useAuth = () => {
   const logout = () => dispatch(logoutThunk());
   const deleteAccount = () => dispatch(deleteAccountThunk());
 
-  return {user, isAuthenticated, isInitialized, loading, error, initAuth, login, signUp, socialLogin, logout, deleteAccount};
+  return {user, isAuthenticated, isInitialized, loading, deleteLoading, error, initAuth, login, signUp, socialLogin, logout, deleteAccount};
 };
