@@ -10,6 +10,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
   loading: boolean;
+  deleteLoading: boolean;
   error: string | null;
 }
 
@@ -19,6 +20,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isInitialized: false,
   loading: false,
+  deleteLoading: false,
   error: null,
 };
 
@@ -93,11 +95,12 @@ export const logoutThunk = createAsyncThunk('auth/logout', async (_, {rejectWith
 export const deleteAccountThunk = createAsyncThunk('auth/deleteAccount', async (_, {rejectWithValue}) => {
   try {
     await authApi.deleteAccount();
-    await clearTokens();
-    await removeStorage('auth_user');
   } catch {
     return rejectWithValue('회원 탈퇴 처리 중 오류가 발생했습니다.');
   }
+  // API 성공 후 로컬 정리 — 실패해도 탈퇴는 완료된 것으로 처리
+  await clearTokens().catch(() => {});
+  await removeStorage('auth_user').catch(() => {});
 });
 
 const authSlice = createSlice({
@@ -175,12 +178,18 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.isAuthenticated = false;
       })
+      .addCase(deleteAccountThunk.pending, state => {
+        state.deleteLoading = true;
+        state.error = null;
+      })
       .addCase(deleteAccountThunk.fulfilled, state => {
+        state.deleteLoading = false;
         state.user = null;
         state.accessToken = null;
         state.isAuthenticated = false;
       })
       .addCase(deleteAccountThunk.rejected, (state, action) => {
+        state.deleteLoading = false;
         state.error = action.payload as string;
       });
   },
