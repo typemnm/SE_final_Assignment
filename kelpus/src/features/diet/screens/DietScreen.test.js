@@ -19,6 +19,7 @@ const createDietState = overrides => ({
   error: null,
   cameraBusy: false,
   cameraError: null,
+  clearCameraError: jest.fn(),
   requestAnalysis: jest.fn(async () => ({analysis_id: 'manual'})),
   analyzeCapturedImage: jest.fn(async () => ({analysis_id: 'camera'})),
   ...overrides,
@@ -56,6 +57,48 @@ describe('DietScreen camera and manual analysis UX', () => {
     await waitFor(() => {
       expect(state.analyzeCapturedImage).toHaveBeenCalledTimes(1);
       expect(navigate).toHaveBeenCalledWith('DietAnalysis');
+    });
+  });
+
+  it('renders a single error message when camera and analysis errors overlap', () => {
+    const message = 'AI 분석 요청에 실패했습니다.';
+    useDiet.mockReturnValue(
+      createDietState({
+        cameraError: message,
+        error: message,
+      }),
+    );
+
+    const {getAllByText} = render(<DietScreen />);
+
+    expect(getAllByText(message)).toHaveLength(1);
+  });
+
+  it('keeps manual analysis errors visible when no camera error is active', () => {
+    const message = 'AI 분석 요청에 실패했습니다.';
+    useDiet.mockReturnValue(createDietState({error: message}));
+
+    const {getByText} = render(<DietScreen />);
+
+    expect(getByText(message)).toBeTruthy();
+  });
+
+  it('clears stale camera errors before starting manual URL analysis', async () => {
+    const state = createDietState({
+      cameraError: '이전 카메라 오류입니다.',
+    });
+    useDiet.mockReturnValue(state);
+
+    const {getByPlaceholderText, getByText} = render(<DietScreen />);
+    fireEvent.changeText(getByPlaceholderText(/example.com/), 'https://example.com/meal.jpg');
+    fireEvent.press(getByText('AI 분석 요청'));
+
+    await waitFor(() => {
+      expect(state.clearCameraError).toHaveBeenCalledTimes(1);
+      expect(state.requestAnalysis).toHaveBeenCalledWith('https://example.com/meal.jpg');
+      expect(state.clearCameraError.mock.invocationCallOrder[0]).toBeLessThan(
+        state.requestAnalysis.mock.invocationCallOrder[0],
+      );
     });
   });
 

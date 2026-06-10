@@ -16,6 +16,7 @@ export const DietScreen = () => {
     error,
     cameraBusy,
     cameraError,
+    clearCameraError,
     requestAnalysis,
     analyzeCapturedImage,
   } = useDiet();
@@ -24,11 +25,13 @@ export const DietScreen = () => {
   const trimmedUrl = dietImageUrl.trim();
   const isBusy = analyzing || cameraBusy;
   const canAnalyze = trimmedUrl.length > 0 && !isBusy;
+  const displayError = cameraError ?? error;
 
   const handleAnalyze = async () => {
     if (!canAnalyze) {
       return;
     }
+    clearCameraError();
     const result = await requestAnalysis(trimmedUrl).catch(() => null);
 
     if (result) {
@@ -81,8 +84,7 @@ export const DietScreen = () => {
         </Text>
       </View>
 
-      {cameraError && <Text style={styles.error}>{cameraError}</Text>}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {displayError && <Text style={styles.error}>{displayError}</Text>}
 
       {currentAnalysis && (
         <View style={styles.resultCard}>

@@ -30,6 +30,10 @@ export const useDiet = () => {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const cameraFlowInFlightRef = useRef(false);
 
+  const clearCameraError = () => {
+    setCameraError(null);
+  };
+
   const requestAnalysis = async (dietImageUrl: string, recordId?: string) => {
     return await dispatch(requestAnalysisThunk({dietImageUrl, recordId})).unwrap();
   };
@@ -69,6 +73,7 @@ export const useDiet = () => {
     error,
     cameraBusy,
     cameraError,
+    clearCameraError,
     requestAnalysis,
     analyzeCapturedImage,
   };
