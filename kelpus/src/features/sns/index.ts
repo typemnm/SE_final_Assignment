@@ -1,4 +1,18 @@
 export {FeedScreen} from './screens/FeedScreen';
 export {FeedCard} from './components/FeedCard';
+export {ReelCreatorModal} from './components/ReelCreatorModal';
+export {ReelPreviewPlayer} from './components/ReelPreviewPlayer';
+export type {ReelPreviewPlayerHandle} from './components/ReelPreviewPlayer';
+export {DietSlideFrame} from './components/DietSlideFrame';
+export {RunningSlideFrame} from './components/RunningSlideFrame';
+export {SavedReelCard} from './components/SavedReelCard';
+export {SavedReelViewer} from './components/SavedReelViewer';
+export {SavedReelListItem} from './components/SavedReelListItem';
 export {useSns} from './hooks/useSns';
+export {useReelCreator} from './hooks/useReelCreator';
+export {useSavedReels} from './hooks/useSavedReels';
 export {snsReducer} from './store/snsSlice';
+export {shareService} from './services/shareService';
+export type {DietFrame, RunningFrame, ReelFrame, MealEntry} from './hooks/useReelCreator';
+export type {SavedReel} from './hooks/useSavedReels';
+export type {ShareContent} from './services/shareService';
