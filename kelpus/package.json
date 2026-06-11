@@ -14,7 +14,10 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@invertase/react-native-apple-authentication": "2.5.1",
     "@react-native-async-storage/async-storage": "2.1.0",
+    "@react-native-kakao/core": "2.4.5",
+    "@react-native-kakao/user": "2.4.5",
     "@react-navigation/bottom-tabs": "6.6.1",
     "@react-navigation/native": "6.1.18",
     "@react-navigation/native-stack": "6.11.0",
@@ -26,8 +29,11 @@
     "react-native": "0.75.4",
     "react-native-chart-kit": "6.12.0",
     "react-native-gesture-handler": "2.21.2",
+    "react-native-google-signin": "2.1.1",
     "react-native-health": "1.19.0",
     "react-native-health-connect": "3.1.0",
+    "react-native-image-picker": "8.2.1",
+    "react-native-keychain": "10.0.0",
     "react-native-maps": "1.20.1",
     "react-native-permissions": "5.1.0",
     "react-native-reanimated": "3.16.2",
@@ -103,7 +109,8 @@
       "^@utils/(.*)$": "<rootDir>/src/utils/$1",
       "^@api/(.*)$": "<rootDir>/src/api/$1",
       "^@navigation/(.*)$": "<rootDir>/src/navigation/$1",
-      "\\.(png|jpg|jpeg|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
+      "\\.(png|jpg|jpeg|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
+      "^react-native-image-picker$": "<rootDir>/src/shims/react-native-image-picker.js"
     },
     "setupFiles": [
       "react-native-gesture-handler/jestSetup"

@@ -28,5 +28,7 @@
         "projectId": ""
       }
     }
-  }
+  },
+  "name": "KelpusNative",
+  "displayName": "Kelpus"
 }

@@ -13,7 +13,7 @@ import {useRunning} from '../hooks/useRunning';
 import {AnimatedRouteMap} from '../components/AnimatedRouteMap';
 import {ElevationChart} from '../components/ElevationChart';
 import {spacing} from '@theme/index';
-import {fmtKm, fmtMinPerKm, fmtElapsed, calcElevationGain} from '../utils';
+import {fmtMinPerKm, fmtElapsed, calcElevationGain} from '../utils';
 import type {RunningStackParams} from '../types';
 
 type Props = NativeStackScreenProps<RunningStackParams, 'RunningDetail'>;

@@ -1,22 +1,54 @@
 import React, {useState} from 'react';
 import {View, Text, FlatList, StyleSheet, TextInput, ScrollView} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {useDiet} from '../hooks/useDiet';
 import {Button} from '@components/common/Button';
 import {colors, typography, spacing} from '@theme/index';
 import {NutritionChart} from '../components/NutritionChart';
+import type {DietNavigationProp} from '@navigation/types';
 
 export const DietScreen = () => {
-  const {records, currentAnalysis, analyzing, error, requestAnalysis} = useDiet();
+  const navigation = useNavigation<DietNavigationProp>();
+  const {
+    records,
+    currentAnalysis,
+    analyzing,
+    error,
+    cameraBusy,
+    cameraError,
+    clearCameraError,
+    requestAnalysis,
+    analyzeCapturedImage,
+  } = useDiet();
   const [dietImageUrl, setDietImageUrl] = useState('');
 
   const trimmedUrl = dietImageUrl.trim();
-  const canAnalyze = trimmedUrl.length > 0 && !analyzing;
+  const isBusy = analyzing || cameraBusy;
+  const canAnalyze = trimmedUrl.length > 0 && !isBusy;
+  const displayError = cameraError ?? error;
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!canAnalyze) {
       return;
     }
-    requestAnalysis(trimmedUrl);
+    clearCameraError();
+    const result = await requestAnalysis(trimmedUrl).catch(() => null);
+
+    if (result) {
+      navigation.navigate('DietAnalysis');
+    }
+  };
+
+  const handleAnalyzeWithCamera = async () => {
+    if (isBusy) {
+      return;
+    }
+
+    const result = await analyzeCapturedImage();
+
+    if (result) {
+      navigation.navigate('DietAnalysis');
+    }
   };
 
   return (
@@ -38,12 +70,21 @@ export const DietScreen = () => {
           loading={analyzing}
           disabled={!canAnalyze}
         />
+        <View style={styles.buttonSpacer} />
+        <Button
+          title="카메라로 촬영"
+          onPress={handleAnalyzeWithCamera}
+          variant="outline"
+          loading={cameraBusy}
+          disabled={isBusy}
+        />
+        {cameraBusy && <Text style={styles.progress}>사진 업로드 후 AI 분석을 요청하는 중입니다.</Text>}
         <Text style={styles.helper}>
           이미지 업로드 API로 받은 URL이나 외부 이미지 URL을 입력하세요.
         </Text>
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {displayError && <Text style={styles.error}>{displayError}</Text>}
 
       {currentAnalysis && (
         <View style={styles.resultCard}>
@@ -104,6 +145,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   helper: {...typography.caption, color: colors.text.secondary, marginTop: spacing.xs},
+  buttonSpacer: {height: spacing.sm},
+  progress: {...typography.caption, color: colors.text.secondary, marginTop: spacing.sm},
   error: {...typography.body2, color: colors.error, marginBottom: spacing.md},
   resultCard: {
     backgroundColor: colors.surface,

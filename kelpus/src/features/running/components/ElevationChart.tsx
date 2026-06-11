@@ -1,12 +1,7 @@
 import React, {useMemo} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
-import Svg, {Path, Line, Text as SvgText, Defs, LinearGradient, Stop, Rect} from 'react-native-svg';
+import Svg, {Path, Line, Text as SvgText, Defs, LinearGradient, Stop} from 'react-native-svg';
 import {colors} from '@theme/index';
-
-interface ElevationPoint {
-  altitude?: number;
-  distance?: number;
-}
 
 interface ElevationChartProps {
   route: Array<{altitude?: number; timestamp?: string}>;
