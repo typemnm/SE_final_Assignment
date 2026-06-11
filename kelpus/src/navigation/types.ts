@@ -29,6 +29,7 @@ export type MyPageStackParamList = {
   ProfileMain: undefined;
   ProfileEdit: undefined;
   Statistics: undefined;
+  Settings: undefined;
 };
 
 export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
