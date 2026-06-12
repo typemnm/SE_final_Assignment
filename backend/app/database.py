@@ -34,6 +34,9 @@ class Base(DeclarativeBase):
 
 async def create_tables() -> None:
     """애플리케이션 시작 시 테이블을 생성한다 (개발 전용)."""
+    from app.domains.model_loader import import_all_models
+
+    import_all_models()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

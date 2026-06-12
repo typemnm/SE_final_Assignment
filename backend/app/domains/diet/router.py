@@ -125,3 +125,53 @@ async def analyze_diet(
 ) -> schemas.DietAnalysisResponse:
     """식단 AI 분석 엔드포인트."""
     return await service.analyze_diet(current_user["user_id"], req, db)
+
+
+@diet_router.get(
+    "/exportable",
+    response_model=list[schemas.DietHealthConnectExportableRecord],
+    status_code=200,
+    summary="Health Connect Nutrition 내보내기 대상 식단 목록",
+    description="현재 사용자의 최신 AI 분석 식단 기록을 Health Connect Nutrition export 대상으로 반환한다.",
+)
+async def list_health_connect_exportable_diets(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[schemas.DietHealthConnectExportableRecord]:
+    """Health Connect Nutrition backfill/export 대상 조회 엔드포인트."""
+    return await service.list_health_connect_exportable_diets(current_user["user_id"], db)
+
+
+@diet_router.patch(
+    "/{record_id}/health-connect-export",
+    response_model=schemas.DietHealthConnectExportStatusResponse,
+    status_code=200,
+    summary="Health Connect Nutrition 내보내기 상태 갱신",
+    description="Android 클라이언트가 Health Connect Nutrition write 결과와 idempotency metadata를 저장한다.",
+)
+async def update_health_connect_export_status(
+    record_id: str,
+    req: schemas.DietHealthConnectExportStatusUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> schemas.DietHealthConnectExportStatusResponse:
+    """Health Connect Nutrition export status update endpoint."""
+    return await service.update_health_connect_export_status(
+        current_user["user_id"], record_id, req, db
+    )
+
+
+@diet_router.delete(
+    "/{record_id}",
+    response_model=schemas.DietDeleteResponse,
+    status_code=200,
+    summary="식단 기록 삭제",
+    description="소유권을 확인한 뒤 식단 기록을 삭제하고 Health Connect export metadata snapshot을 반환한다.",
+)
+async def delete_diet_record(
+    record_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> schemas.DietDeleteResponse:
+    """식단 기록 삭제 엔드포인트."""
+    return await service.delete_diet_record(current_user["user_id"], record_id, db)

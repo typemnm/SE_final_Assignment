@@ -1,0 +1,10 @@
+{
+  "status": "failed",
+  "total": {"created": 0, "skipped": 0, "failed": 4, "errors": []},
+  "groups": {
+    "running": {"created": 0, "skipped": 0, "failed": 1, "errors": ["running[0] invalid"]},
+    "nutrition": {"created": 0, "skipped": 0, "failed": 1, "errors": ["nutrition[0] invalid"]},
+    "dailyActivity": {"created": 0, "skipped": 0, "failed": 1, "errors": ["dailyActivity[0] invalid"]},
+    "heartRate": {"created": 0, "skipped": 0, "failed": 1, "errors": ["heartRate[0] invalid"]}
+  }
+}

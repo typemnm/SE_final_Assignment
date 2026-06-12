@@ -3,6 +3,10 @@ import type {
   DietRecord,
   DietAnalysisResult,
   DietAnalysisRequest,
+  DietDeleteResponse,
+  DietHealthConnectExportableRecord,
+  DietHealthConnectExportStatusResponse,
+  DietHealthConnectExportStatusUpdateRequest,
   DietImageUploadResponse,
 } from '@appTypes/diet.types';
 
@@ -38,4 +42,25 @@ export const dietApi = {
   },
   getAnalysisHistory: () => apiClient.get<DietAnalysisResult[]>('/api/v1/diet/history'),
   getAnalysisCount: () => apiClient.get<{remaining: number; total: number}>('/api/v1/diet/count'),
+  getHealthConnectExportableRecords: async (): Promise<DietHealthConnectExportableRecord[]> => {
+    const response = await apiClient.get<
+      DietHealthConnectExportableRecord[] | ApiEnvelope<DietHealthConnectExportableRecord[]>
+    >('/api/v1/diet/exportable');
+    return unwrapApiData(response.data);
+  },
+  updateHealthConnectExportStatus: async (
+    recordId: string,
+    data: DietHealthConnectExportStatusUpdateRequest,
+  ): Promise<DietHealthConnectExportStatusResponse> => {
+    const response = await apiClient.patch<
+      DietHealthConnectExportStatusResponse | ApiEnvelope<DietHealthConnectExportStatusResponse>
+    >(`/api/v1/diet/${recordId}/health-connect-export`, data);
+    return unwrapApiData(response.data);
+  },
+  deleteDietRecord: async (recordId: string): Promise<DietDeleteResponse> => {
+    const response = await apiClient.delete<DietDeleteResponse | ApiEnvelope<DietDeleteResponse>>(
+      `/api/v1/diet/${recordId}`,
+    );
+    return unwrapApiData(response.data);
+  },
 };

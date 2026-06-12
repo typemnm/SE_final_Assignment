@@ -135,6 +135,7 @@ async def sync_running_record(
             user_rank = await _running_repo.get_rank(user_id, db)
             return RunningSyncResponse(
                 record_id=existing.id,
+                created=False,
                 distance=existing.distance,
                 avg_pace=existing.avg_pace,
                 percentile=percentile,
@@ -171,6 +172,7 @@ async def sync_running_record(
 
     return RunningSyncResponse(
         record_id=record.id,
+        created=True,
         distance=record.distance,
         avg_pace=record.avg_pace,
         percentile=percentile,

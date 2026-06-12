@@ -33,6 +33,7 @@ export interface DietAnalysisResult {
   analyzed_at: string;
   visualization?: DietAnalysisVisualization;
   nutrition_details?: NutritionDetails;
+  health_connect_export_status?: DietHealthConnectExportStatus;
 }
 
 export interface DietAnalysisVisualization {
@@ -64,4 +65,68 @@ export interface NutritionDetails {
 export interface DietImageUploadResponse {
   diet_image_url: string;
   message: string;
+}
+
+export type DietHealthConnectExportStatus =
+  | 'not_exported'
+  | 'exported'
+  | 'permission_required'
+  | 'unavailable'
+  | 'failed'
+  | 'deleted';
+
+export interface DietHealthConnectExportStatusUpdateRequest {
+  client_record_id: string;
+  record_id?: string | null;
+  record_version?: number | null;
+  status: DietHealthConnectExportStatus;
+  exported_at?: string | null;
+  last_error?: string | null;
+}
+
+export interface DietHealthConnectExportStatusResponse {
+  record_id: string;
+  health_connect_client_record_id: string | null;
+  health_connect_record_id: string | null;
+  health_connect_record_version: number | null;
+  health_connect_export_status: DietHealthConnectExportStatus;
+  health_connect_exported_at: string | null;
+  health_connect_last_error: string | null;
+}
+
+export interface DietHealthConnectExportableRecord {
+  record_id: string;
+  analysis_id: string;
+  recorded_at: string;
+  analyzed_at: string;
+  diet_image_url: string | null;
+  total_calories: number;
+  carb_ratio: number;
+  protein_ratio: number;
+  fat_ratio: number;
+  nutrition_data: {
+    calories?: number;
+    protein?: number;
+    carbohydrate?: number;
+    carbohydrates?: number;
+    carbs?: number;
+    fat?: number;
+    fiber?: number;
+    sugar?: number;
+    name?: string;
+  } | null;
+  health_connect_client_record_id: string | null;
+  health_connect_record_id: string | null;
+  health_connect_record_version: number | null;
+  health_connect_export_status: DietHealthConnectExportStatus;
+  health_connect_exported_at: string | null;
+  health_connect_last_error: string | null;
+}
+
+export interface DietDeleteResponse {
+  record_id: string;
+  deleted: boolean;
+  health_connect_client_record_id: string | null;
+  health_connect_record_id: string | null;
+  health_connect_export_status: DietHealthConnectExportStatus;
 }

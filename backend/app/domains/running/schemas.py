@@ -27,6 +27,7 @@ class RunningSyncResponse(BaseModel):
     """러닝 기록 동기화 응답 스키마."""
 
     record_id: uuid.UUID = Field(..., description="생성된 러닝 기록 ID")
+    created: bool = Field(default=True, description="새 기록 생성 여부")
     distance: float
     avg_pace: float
     percentile: float = Field(..., description="산출된 상위 백분율")

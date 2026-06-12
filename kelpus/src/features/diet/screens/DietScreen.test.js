@@ -17,11 +17,24 @@ const createDietState = overrides => ({
   currentAnalysis: null,
   analyzing: false,
   error: null,
+  healthConnectExportStatus: 'idle',
+  healthConnectExportError: null,
+  healthConnectBackfillSummary: null,
+  healthConnectBackfillBusy: false,
+  healthConnectBackfillError: null,
   cameraBusy: false,
   cameraError: null,
   clearCameraError: jest.fn(),
   requestAnalysis: jest.fn(async () => ({analysis_id: 'manual'})),
   analyzeCapturedImage: jest.fn(async () => ({analysis_id: 'camera'})),
+  backfillHealthConnectNutrition: jest.fn(async () => ({
+    total: 1,
+    exported: 1,
+    skipped: 0,
+    failed: 0,
+    permissionRequired: 0,
+    unavailable: 0,
+  })),
   ...overrides,
 });
 
@@ -114,5 +127,39 @@ describe('DietScreen camera and manual analysis UX', () => {
 
     expect(getByText('사진 업로드 후 AI 분석을 요청하는 중입니다.')).toBeTruthy();
     expect(getByText('카메라 권한이 필요합니다.')).toBeTruthy();
+  });
+
+  it('renders Health Connect export status without hiding analysis result navigation', () => {
+    useDiet.mockReturnValue(
+      createDietState({
+        healthConnectExportStatus: 'permission_required',
+      }),
+    );
+
+    const {getByText} = render(<DietScreen />);
+
+    expect(getByText('Health Connect 영양 쓰기 권한이 필요합니다.')).toBeTruthy();
+  });
+
+  it('runs retryable backfill from the diet screen and renders summary UX', async () => {
+    const state = createDietState({
+      healthConnectBackfillSummary: {
+        total: 3,
+        exported: 1,
+        skipped: 1,
+        failed: 1,
+        permissionRequired: 0,
+        unavailable: 0,
+      },
+    });
+    useDiet.mockReturnValue(state);
+
+    const {getByText} = render(<DietScreen />);
+    fireEvent.press(getByText('기존 분석 Health Connect 내보내기'));
+
+    await waitFor(() => {
+      expect(state.backfillHealthConnectNutrition).toHaveBeenCalledTimes(1);
+    });
+    expect(getByText('기존 분석 내보내기: 성공 1건, 건너뜀 1건, 실패 1건')).toBeTruthy();
   });
 });

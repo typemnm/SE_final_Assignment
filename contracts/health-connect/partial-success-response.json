@@ -1,0 +1,10 @@
+{
+  "status": "partial_success",
+  "total": {"created": 3, "skipped": 1, "failed": 1, "errors": []},
+  "groups": {
+    "running": {"created": 1, "skipped": 0, "failed": 0, "errors": []},
+    "nutrition": {"created": 1, "skipped": 1, "failed": 0, "errors": []},
+    "dailyActivity": {"created": 1, "skipped": 0, "failed": 0, "errors": []},
+    "heartRate": {"created": 0, "skipped": 0, "failed": 1, "errors": ["heartRate[0].samples[0].bpm must be >= 0"]}
+  }
+}
