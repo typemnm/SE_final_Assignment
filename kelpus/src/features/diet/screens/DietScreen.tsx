@@ -14,11 +14,17 @@ export const DietScreen = () => {
     currentAnalysis,
     analyzing,
     error,
+    healthConnectExportStatus,
+    healthConnectExportError,
+    healthConnectBackfillSummary,
+    healthConnectBackfillBusy,
+    healthConnectBackfillError,
     cameraBusy,
     cameraError,
     clearCameraError,
     requestAnalysis,
     analyzeCapturedImage,
+    backfillHealthConnectNutrition,
   } = useDiet();
   const [dietImageUrl, setDietImageUrl] = useState('');
 
@@ -26,6 +32,23 @@ export const DietScreen = () => {
   const isBusy = analyzing || cameraBusy;
   const canAnalyze = trimmedUrl.length > 0 && !isBusy;
   const displayError = cameraError ?? error;
+  const backfillSummaryText = healthConnectBackfillSummary
+    ? `기존 분석 내보내기: 성공 ${healthConnectBackfillSummary.exported}건, 건너뜀 ${healthConnectBackfillSummary.skipped}건, 실패 ${
+        healthConnectBackfillSummary.failed +
+        healthConnectBackfillSummary.permissionRequired +
+        healthConnectBackfillSummary.unavailable
+      }건`
+    : null;
+  const healthConnectExportMessage =
+    healthConnectExportStatus === 'exported'
+      ? 'Health Connect에 영양 정보가 저장되었습니다.'
+      : healthConnectExportStatus === 'permission_required'
+        ? 'Health Connect 영양 쓰기 권한이 필요합니다.'
+        : healthConnectExportStatus === 'unavailable'
+          ? '이 기기에서 Health Connect 내보내기를 사용할 수 없습니다.'
+          : healthConnectExportStatus === 'failed'
+            ? (healthConnectExportError ?? 'Health Connect 영양 정보 내보내기에 실패했습니다.')
+            : null;
 
   const handleAnalyze = async () => {
     if (!canAnalyze) {
@@ -78,13 +101,38 @@ export const DietScreen = () => {
           loading={cameraBusy}
           disabled={isBusy}
         />
-        {cameraBusy && <Text style={styles.progress}>사진 업로드 후 AI 분석을 요청하는 중입니다.</Text>}
+        <View style={styles.buttonSpacer} />
+        <Button
+          title="기존 분석 Health Connect 내보내기"
+          onPress={backfillHealthConnectNutrition}
+          variant="outline"
+          loading={healthConnectBackfillBusy}
+          disabled={isBusy || healthConnectBackfillBusy}
+        />
+        {cameraBusy && (
+          <Text style={styles.progress}>사진 업로드 후 AI 분석을 요청하는 중입니다.</Text>
+        )}
         <Text style={styles.helper}>
           이미지 업로드 API로 받은 URL이나 외부 이미지 URL을 입력하세요.
         </Text>
       </View>
 
       {displayError && <Text style={styles.error}>{displayError}</Text>}
+      {healthConnectBackfillError && <Text style={styles.error}>{healthConnectBackfillError}</Text>}
+      {backfillSummaryText && (
+        <Text style={styles.healthConnectSuccess}>{backfillSummaryText}</Text>
+      )}
+
+      {healthConnectExportMessage && (
+        <Text
+          style={
+            healthConnectExportStatus === 'exported'
+              ? styles.healthConnectSuccess
+              : styles.healthConnectWarning
+          }>
+          {healthConnectExportMessage}
+        </Text>
+      )}
 
       {currentAnalysis && (
         <View style={styles.resultCard}>
@@ -148,6 +196,8 @@ const styles = StyleSheet.create({
   buttonSpacer: {height: spacing.sm},
   progress: {...typography.caption, color: colors.text.secondary, marginTop: spacing.sm},
   error: {...typography.body2, color: colors.error, marginBottom: spacing.md},
+  healthConnectSuccess: {...typography.body2, color: colors.primary, marginBottom: spacing.md},
+  healthConnectWarning: {...typography.body2, color: colors.accent, marginBottom: spacing.md},
   resultCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,

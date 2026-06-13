@@ -110,10 +110,29 @@ export const RunningListScreen = () => {
     try {
       const result = await syncFromHealth(30);
       if (Platform.OS !== 'web') {
-        Alert.alert(
-          '동기화 완료',
-          `새로운 기록: ${result.synced}개\n이미 동기화됨: ${result.skipped}개`,
-        );
+        if (result.status === 'unavailable') {
+          Alert.alert('동기화 불가', result.message ?? '이 기기에서 Health Connect를 사용할 수 없습니다.');
+        } else if (result.status === 'update_required') {
+          Alert.alert('업데이트 필요', result.message ?? 'Health Connect 업데이트가 필요합니다.');
+        } else if (result.status === 'denied') {
+          Alert.alert('권한 필요', result.message ?? 'Health Connect 권한을 허용해 주세요.');
+        } else if (result.status === 'no_data') {
+          Alert.alert('동기화할 데이터 없음', result.message ?? '최근 Health Connect 데이터가 없습니다.');
+        } else if (result.status === 'partial_success') {
+          Alert.alert(
+            '일부 동기화 완료',
+            `새로운 기록: ${result.synced}개\n이미 동기화됨: ${result.skipped}개\n실패: ${result.failed}개`,
+          );
+        } else if (result.status === 'failed') {
+          Alert.alert('동기화 실패', result.message ?? 'Health Connect 기록 동기화에 실패했습니다.');
+        } else if (result.status === 'error') {
+          Alert.alert('동기화 실패', result.message ?? 'Health Connect 동기화에 실패했습니다.');
+        } else {
+          Alert.alert(
+            '동기화 완료',
+            `새로운 기록: ${result.synced}개\n이미 동기화됨: ${result.skipped}개`,
+          );
+        }
       }
     } finally {
       setSyncing(false);
@@ -146,7 +165,7 @@ export const RunningListScreen = () => {
 
   if (loading && records.length === 0) return <LoadingSpinner fullScreen />;
 
-  const platformLabel = Platform.OS === 'ios' ? 'Apple Health' : '삼성 헬스';
+  const platformLabel = 'Health Connect';
 
   return (
     <FlatList

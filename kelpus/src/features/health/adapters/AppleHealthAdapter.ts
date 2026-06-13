@@ -1,6 +1,11 @@
 import {Platform} from 'react-native';
 import type {HealthAdapter} from './HealthAdapter';
-import type {HealthDietRecord, HealthRunningRecord} from '@appTypes/health.types';
+import type {
+  HealthConnectDailyActivityRecord,
+  HealthConnectHeartRateRecord,
+  HealthDietRecord,
+  HealthRunningRecord,
+} from '@appTypes/health.types';
 
 // react-native-health는 iOS 네이티브 빌드(EAS Build / Xcode)에서만 동작합니다.
 // 개발 중 웹/Android에서 import 오류를 방지하기 위해 동적 require를 사용합니다.
@@ -114,4 +119,19 @@ export class AppleHealthAdapter implements HealthAdapter {
       };
     });
   }
+
+  async getDailyActivityRecords(
+    _startDate: Date,
+    _endDate: Date,
+  ): Promise<HealthConnectDailyActivityRecord[]> {
+    return [];
+  }
+
+  async getHeartRateRecords(
+    _startDate: Date,
+    _endDate: Date,
+  ): Promise<HealthConnectHeartRateRecord[]> {
+    return [];
+  }
+
 }

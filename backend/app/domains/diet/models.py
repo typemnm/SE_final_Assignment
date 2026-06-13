@@ -7,7 +7,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Enum, Float, ForeignKey, String
+from sqlalchemy import Enum, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy import DateTime
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,6 +20,18 @@ class DataSourceEnum(str, enum.Enum):
 
     os_health = "os_health"
     manual = "manual"
+    health_connect = "health_connect"
+
+
+class HealthConnectExportStatusEnum(str, enum.Enum):
+    """Health Connect outbound Nutrition export status."""
+
+    not_exported = "not_exported"
+    exported = "exported"
+    permission_required = "permission_required"
+    unavailable = "unavailable"
+    failed = "failed"
+    deleted = "deleted"
 
 
 class DietRecord(Base):
@@ -33,9 +45,19 @@ class DietRecord(Base):
         data_source: 데이터 출처 (os_health/manual).
         diet_image_url: 식단 이미지 URL.
         nutrition_data: 영양소 데이터 JSON.
+        external_id: inbound Health Connect import ID or deterministic fallback key.
+        health_connect_client_record_id: outbound Health Connect Nutrition clientRecordId.
     """
 
     __tablename__ = "diet_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "data_source",
+            "external_id",
+            name="uq_diet_records_user_source_external_id",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -53,6 +75,23 @@ class DietRecord(Base):
     )
     diet_image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     nutrition_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Inbound Health Connect import identity only. Do not reuse this for outbound
+    # Kelpus -> Health Connect export metadata; use the health_connect_* fields below.
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    health_connect_client_record_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+    health_connect_record_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    health_connect_record_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    health_connect_export_status: Mapped[HealthConnectExportStatusEnum] = mapped_column(
+        Enum(HealthConnectExportStatusEnum, name="health_connect_export_status_enum"),
+        default=HealthConnectExportStatusEnum.not_exported,
+        nullable=False,
+    )
+    health_connect_exported_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    health_connect_last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # 관계
     analysis_result: Mapped["DietAnalysisResult | None"] = relationship(
@@ -81,6 +120,27 @@ class DietRecord(Base):
             "source": "os_health",
         }
         self.data_source = DataSourceEnum.os_health
+        return self
+
+    def map_health_connect_nutrition(self, raw_data: dict, external_id: str) -> "DietRecord":
+        """Map Health Connect nutrition data with an explicit idempotency key.
+
+        Args:
+            raw_data: Normalized Health Connect nutrition payload.
+            external_id: inbound Health Connect metadata/client ID or deterministic fallback key.
+
+        Returns:
+            DietRecord configured as a Health Connect nutrition import.
+        """
+        self.nutrition_data = {
+            "calories": raw_data.get("calories", 0),
+            "carbohydrates": raw_data.get("carbs", raw_data.get("carbohydrates", 0)),
+            "protein": raw_data.get("protein", 0),
+            "fat": raw_data.get("fat", raw_data.get("totalFat", 0)),
+            "source": "health_connect",
+        }
+        self.external_id = external_id
+        self.data_source = DataSourceEnum.health_connect
         return self
 
 

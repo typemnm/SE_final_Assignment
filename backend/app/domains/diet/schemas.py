@@ -8,7 +8,7 @@ from datetime import datetime
 
 from pydantic import AliasChoices, BaseModel, Field
 
-from app.domains.diet.models import DataSourceEnum
+from app.domains.diet.models import DataSourceEnum, HealthConnectExportStatusEnum
 
 
 class DietSyncRequest(BaseModel):
@@ -74,6 +74,66 @@ class DietImageUploadResponse(BaseModel):
 
     diet_image_url: str = Field(..., description="분석 요청에 사용할 업로드 이미지 URL")
     message: str = Field(default="이미지 업로드 완료", description="처리 결과 메시지")
+
+
+class DietHealthConnectExportStatusUpdateRequest(BaseModel):
+    """Health Connect Nutrition outbound export status update."""
+
+    client_record_id: str = Field(
+        ..., min_length=1, max_length=255, description="Deterministic Health Connect clientRecordId"
+    )
+    record_id: str | None = Field(
+        None, max_length=255, description="Device-local Health Connect UUID/cache ID"
+    )
+    record_version: int | None = Field(None, ge=0, description="Health Connect clientRecordVersion")
+    status: HealthConnectExportStatusEnum = Field(..., description="Export lifecycle status")
+    exported_at: datetime | None = Field(None, description="Successful export timestamp")
+    last_error: str | None = Field(None, max_length=1000, description="Sanitized export error")
+
+
+class DietHealthConnectExportStatusResponse(BaseModel):
+    """Persisted Health Connect Nutrition export status."""
+
+    model_config = {"from_attributes": True}
+
+    record_id: uuid.UUID
+    health_connect_client_record_id: str | None
+    health_connect_record_id: str | None
+    health_connect_record_version: int | None
+    health_connect_export_status: HealthConnectExportStatusEnum
+    health_connect_exported_at: datetime | None
+    health_connect_last_error: str | None
+
+
+class DietHealthConnectExportableRecord(BaseModel):
+    """Analyzed DietRecord payload that can be exported to Health Connect Nutrition."""
+
+    record_id: uuid.UUID
+    analysis_id: uuid.UUID
+    recorded_at: datetime
+    analyzed_at: datetime
+    diet_image_url: str | None
+    total_calories: float
+    carb_ratio: float
+    protein_ratio: float
+    fat_ratio: float
+    nutrition_data: dict | None
+    health_connect_client_record_id: str | None
+    health_connect_record_id: str | None
+    health_connect_record_version: int | None
+    health_connect_export_status: HealthConnectExportStatusEnum
+    health_connect_exported_at: datetime | None
+    health_connect_last_error: str | None
+
+
+class DietDeleteResponse(BaseModel):
+    """Diet record deletion response with outbound export metadata for client cleanup."""
+
+    record_id: uuid.UUID
+    deleted: bool = True
+    health_connect_client_record_id: str | None
+    health_connect_record_id: str | None
+    health_connect_export_status: HealthConnectExportStatusEnum
 
 
 class DietRecordResponse(BaseModel):

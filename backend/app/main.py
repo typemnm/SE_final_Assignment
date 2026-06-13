@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import create_tables
 from app.domains.diet.router import diet_router
+from app.domains.health.router import health_router
 from app.domains.running.router import running_router
 from app.domains.sns.router import feed_router
 from app.domains.user.router import auth_router, subscription_router, user_router
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
     app.include_router(subscription_router)
     app.include_router(diet_router)
     app.include_router(running_router)
+    app.include_router(health_router)
     app.include_router(feed_router)
 
     # ─── 헬스체크 엔드포인트 ──────────────────────────────────────────────────

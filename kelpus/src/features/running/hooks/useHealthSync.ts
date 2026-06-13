@@ -1,107 +1,89 @@
 import {useCallback} from 'react';
 import {useDispatch} from 'react-redux';
-import {Platform} from 'react-native';
 import type {AppDispatch} from '@store/index';
-import {setSyncStatus, setRecords, setLoading} from '../store/runningSlice';
+import {setSyncStatus, setRecords, setLoading, setError} from '../store/runningSlice';
 import {runningService} from '../services/runningService';
-import {SamsungHealthAdapter} from '../../health/adapters/SamsungHealthAdapter';
-import {AppleHealthAdapter} from '../../health/adapters/AppleHealthAdapter';
-import type {HealthRunningRecord, GpsPoint} from '@appTypes/health.types';
+import {syncHealthConnectData} from '../../health/hooks/useHealth';
+import type {HealthSyncUxStatus} from '../../health/hooks/useHealth';
 
-const getAdapter = () =>
-  Platform.OS === 'ios' ? new AppleHealthAdapter() : new SamsungHealthAdapter();
-
-const toGpsCoords = (points: GpsPoint[]) =>
-  points.map(p => ({
-    lat: p.latitude,
-    lng: p.longitude,
-    altitude: p.altitude,
-    timestamp: p.timestamp,
-  }));
-
-const calcAvgPace = (record: HealthRunningRecord): number => {
-  if (record.distance <= 0) return 0;
-  const durationSec =
-    record.durationSeconds ??
-    (new Date(record.endTime).getTime() - new Date(record.startTime).getTime()) / 1000;
-  return durationSec / 60 / record.distance;
+type RunningHealthSyncResult = {
+  synced: number;
+  skipped: number;
+  failed: number;
+  status: HealthSyncUxStatus;
+  message?: string;
 };
+
+const toRunningResult = (status: HealthSyncUxStatus, message?: string): RunningHealthSyncResult => ({
+  synced: 0,
+  skipped: 0,
+  failed: 0,
+  status,
+  message,
+});
 
 export const useHealthSync = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const syncFromHealth = useCallback(
-    async (days = 7): Promise<{synced: number; skipped: number; failed: number}> => {
-      const adapter = getAdapter();
+    async (days = 7): Promise<RunningHealthSyncResult> => {
       dispatch(setSyncStatus({status: 'syncing'}));
+      dispatch(setError(null));
 
-      const hasPermission = await adapter.requestPermissions();
-      if (!hasPermission) {
-        dispatch(setSyncStatus({status: 'error'}));
-        return {synced: 0, skipped: 0, failed: 0};
-      }
-
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-
-      let records: HealthRunningRecord[] = [];
       try {
-        records = await adapter.getRunningRecords(startDate, endDate);
-      } catch {
-        dispatch(setSyncStatus({status: 'error'}));
-        return {synced: 0, skipped: 0, failed: 0};
-      }
+        const result = await syncHealthConnectData({days});
 
-      let synced = 0;
-      let skipped = 0;
-      let failed = 0;
-
-      for (const rec of records) {
-        if (rec.distance <= 0) {
-          skipped++;
-          continue;
-        }
-        try {
-          const durationSec =
-            rec.durationSeconds ??
-            Math.round(
-              (new Date(rec.endTime).getTime() - new Date(rec.startTime).getTime()) / 1000,
-            );
-
-          const res = await runningService.syncRecord({
-            distance: rec.distance,
-            avg_pace: calcAvgPace(rec),
-            gps_coordinates: toGpsCoords(rec.route ?? []),
-            duration_seconds: durationSec,
-            calories: rec.calories,
-            external_id: rec.externalId || undefined,
-            recorded_at: rec.startTime,
-          });
-
-          if (res.message?.includes('이미')) {
-            skipped++;
-          } else {
-            synced++;
+        if (!result.response) {
+          const terminalStatus = result.status === 'no_data' ? 'done' : 'error';
+          dispatch(setSyncStatus({status: terminalStatus}));
+          if (terminalStatus === 'error') {
+            dispatch(setError(result.message ?? 'Health Connect 동기화에 실패했습니다.'));
           }
-        } catch {
-          failed++;
+          return toRunningResult(result.status, result.message);
         }
-      }
 
-      // 동기화 후 목록 갱신
-      try {
-        dispatch(setLoading(true));
-        const updated = await runningService.listRecords();
-        dispatch(setRecords(updated as any[]));
-      } catch {
-        // ignore
-      } finally {
-        dispatch(setLoading(false));
-      }
+        const runningCounts = result.response.groups.running;
+        if (result.status === 'failed') {
+          const message = result.message ?? 'Health Connect 기록 동기화에 실패했습니다.';
+          dispatch(setSyncStatus({status: 'error'}));
+          dispatch(setError(message));
+          return {
+            synced: runningCounts.created,
+            skipped: runningCounts.skipped,
+            failed: runningCounts.failed,
+            status: result.status,
+            message,
+          };
+        }
 
-      dispatch(setSyncStatus({status: 'done', time: new Date().toISOString()}));
-      return {synced, skipped, failed};
+        try {
+          dispatch(setLoading(true));
+          const updated = await runningService.listRecords();
+          dispatch(setRecords(updated));
+        } catch {
+          // Health Connect ingestion succeeded; list refresh can be retried by normal screen focus.
+        } finally {
+          dispatch(setLoading(false));
+        }
+
+        dispatch(setSyncStatus({status: 'done', time: new Date().toISOString()}));
+        if (result.status === 'partial_success') {
+          dispatch(setError('일부 Health Connect 기록을 동기화하지 못했습니다.'));
+        }
+
+        return {
+          synced: runningCounts.created,
+          skipped: runningCounts.skipped,
+          failed: runningCounts.failed,
+          status: result.status,
+          message: result.status === 'partial_success' ? '일부 기록 동기화 실패' : undefined,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Health Connect 동기화에 실패했습니다.';
+        dispatch(setSyncStatus({status: 'error'}));
+        dispatch(setError(message));
+        return toRunningResult('error', message);
+      }
     },
     [dispatch],
   );

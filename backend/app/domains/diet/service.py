@@ -10,6 +10,10 @@ from app.domains.diet.repository import DietAnalysisResultRepository, DietRecord
 from app.domains.diet.schemas import (
     DietAnalyzeRequest,
     DietAnalysisResponse,
+    DietDeleteResponse,
+    DietHealthConnectExportableRecord,
+    DietHealthConnectExportStatusResponse,
+    DietHealthConnectExportStatusUpdateRequest,
     DietSyncRequest,
     DietSyncResponse,
 )
@@ -163,4 +167,102 @@ async def analyze_diet(
         ai_comment=analysis_result.ai_comment,
         analyzed_at=analysis_result.analyzed_at,
         visualization=analysis_result.get_visualization_data(),
+    )
+
+
+
+def _sanitize_export_error(message: str | None) -> str | None:
+    """Return a compact export error safe for persistence/API responses."""
+    if not message:
+        return None
+    compact = " ".join(str(message).split())
+    return compact[:500]
+
+
+def _export_status_response(record) -> DietHealthConnectExportStatusResponse:
+    return DietHealthConnectExportStatusResponse(
+        record_id=record.id,
+        health_connect_client_record_id=record.health_connect_client_record_id,
+        health_connect_record_id=record.health_connect_record_id,
+        health_connect_record_version=record.health_connect_record_version,
+        health_connect_export_status=record.health_connect_export_status,
+        health_connect_exported_at=record.health_connect_exported_at,
+        health_connect_last_error=record.health_connect_last_error,
+    )
+
+
+def _exportable_response(record, analysis) -> DietHealthConnectExportableRecord:
+    return DietHealthConnectExportableRecord(
+        record_id=record.id,
+        analysis_id=analysis.id,
+        recorded_at=record.recorded_at,
+        analyzed_at=analysis.analyzed_at,
+        diet_image_url=record.diet_image_url,
+        total_calories=analysis.total_calories,
+        carb_ratio=analysis.carb_ratio,
+        protein_ratio=analysis.protein_ratio,
+        fat_ratio=analysis.fat_ratio,
+        nutrition_data=record.nutrition_data,
+        health_connect_client_record_id=record.health_connect_client_record_id,
+        health_connect_record_id=record.health_connect_record_id,
+        health_connect_record_version=record.health_connect_record_version,
+        health_connect_export_status=record.health_connect_export_status,
+        health_connect_exported_at=record.health_connect_exported_at,
+        health_connect_last_error=record.health_connect_last_error,
+    )
+
+
+async def list_health_connect_exportable_diets(
+    user_id: str,
+    db: AsyncSession,
+) -> list[DietHealthConnectExportableRecord]:
+    """Return the current user's latest analyzed DietRecords for HC Nutrition export."""
+    rows = await _diet_record_repo.list_exportable_health_connect_nutrition(user_id, db)
+    return [_exportable_response(record, analysis) for record, analysis in rows]
+
+
+async def update_health_connect_export_status(
+    user_id: str,
+    record_id: str,
+    req: DietHealthConnectExportStatusUpdateRequest,
+    db: AsyncSession,
+) -> DietHealthConnectExportStatusResponse:
+    """Persist outbound Health Connect Nutrition export status for an owned DietRecord."""
+    record = await _diet_record_repo.update_health_connect_export_status(
+        record_id=record_id,
+        user_id=user_id,
+        client_record_id=req.client_record_id,
+        health_connect_record_id=req.record_id,
+        record_version=req.record_version,
+        export_status=req.status,
+        exported_at=req.exported_at,
+        last_error=_sanitize_export_error(req.last_error),
+        db=db,
+    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="식단 기록을 찾을 수 없습니다.",
+        )
+    return _export_status_response(record)
+
+
+async def delete_diet_record(
+    user_id: str,
+    record_id: str,
+    db: AsyncSession,
+) -> DietDeleteResponse:
+    """Delete an owned DietRecord and return export metadata needed by the client."""
+    record = await _diet_record_repo.delete_for_user(record_id, user_id, db)
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="식단 기록을 찾을 수 없습니다.",
+        )
+    return DietDeleteResponse(
+        record_id=record.id,
+        deleted=True,
+        health_connect_client_record_id=record.health_connect_client_record_id,
+        health_connect_record_id=record.health_connect_record_id,
+        health_connect_export_status=record.health_connect_export_status,
     )
