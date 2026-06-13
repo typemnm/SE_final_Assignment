@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Platform} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../hooks/useAuth';
 import {Button} from '@components/common/Button';
@@ -87,9 +87,12 @@ export const LoginScreen = () => {
         <Text style={styles.dividerText}>또는</Text>
         <View style={styles.divider} />
       </View>
-      <SocialLoginButton provider="kakao" onPress={() => handleSocialLogin('kakao')} />
-      <SocialLoginButton provider="google" onPress={() => handleSocialLogin('google')} />
-      <SocialLoginButton provider="apple" onPress={() => handleSocialLogin('apple')} />
+      <SocialLoginButton provider="kakao" onPress={() => handleSocialLogin('kakao')} disabled={Platform.OS === 'web'} />
+      <SocialLoginButton provider="google" onPress={() => handleSocialLogin('google')} disabled={Platform.OS === 'web'} />
+      <SocialLoginButton provider="apple" onPress={() => handleSocialLogin('apple')} disabled={Platform.OS === 'web'} />
+      {Platform.OS === 'web' && (
+        <Text style={styles.webNotice}>소셜 로그인은 모바일 앱에서만 지원합니다.</Text>
+      )}
       <View style={styles.signUpRow}>
         <Text style={styles.signUpText}>계정이 없으신가요? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
@@ -111,4 +114,5 @@ const styles = StyleSheet.create({
   signUpText: {...typography.body2, color: colors.text.secondary},
   signUpLink: {...typography.body2, color: colors.primary, fontWeight: '600'},
   loginError: {...typography.body2, color: colors.error ?? '#D32F2F', textAlign: 'center', marginBottom: spacing.sm},
+  webNotice: {...typography.body2, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.xs},
 });

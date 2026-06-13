@@ -5,6 +5,7 @@ import {spacing, typography} from '@theme/index';
 interface SocialLoginButtonProps {
   provider: 'kakao' | 'google' | 'apple';
   onPress: () => void;
+  disabled?: boolean;
 }
 
 const providerConfig = {
@@ -13,10 +14,13 @@ const providerConfig = {
   apple: {label: 'Apple로 로그인', backgroundColor: '#000000', textColor: '#FFFFFF'},
 };
 
-export const SocialLoginButton = ({provider, onPress}: SocialLoginButtonProps) => {
+export const SocialLoginButton = ({provider, onPress, disabled}: SocialLoginButtonProps) => {
   const config = providerConfig[provider];
   return (
-    <TouchableOpacity style={[styles.button, {backgroundColor: config.backgroundColor}]} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.button, {backgroundColor: config.backgroundColor}, disabled && styles.disabled]}
+      onPress={disabled ? undefined : onPress}
+      activeOpacity={disabled ? 1 : 0.7}>
       <Text style={[styles.text, {color: config.textColor}]}>{config.label}</Text>
     </TouchableOpacity>
   );
@@ -25,4 +29,5 @@ export const SocialLoginButton = ({provider, onPress}: SocialLoginButtonProps) =
 const styles = StyleSheet.create({
   button: {padding: spacing.md, borderRadius: 8, alignItems: 'center', marginBottom: spacing.sm},
   text: {...typography.button},
+  disabled: {opacity: 0.4},
 });
