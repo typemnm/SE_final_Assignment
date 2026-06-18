@@ -9,8 +9,6 @@ interface Props {
   compact?: boolean;
 }
 
-// ── 포맷 헬퍼 ──────────────────────────────────
-
 const fmtPace = (minPerKm: number): string => {
   if (!minPerKm || !isFinite(minPerKm) || minPerKm <= 0) return "--'--\"";
   const m = Math.floor(minPerKm);
@@ -22,101 +20,64 @@ const fmtDuration = (secs: number): string => {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
-  if (h > 0)
-    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-const fmtDist = (km: number) =>
-  km >= 1 ? `${km.toFixed(2)} km` : `${Math.round(km * 1000)} m`;
-
-// ── 지도 리전 계산 ──────────────────────────────
+const fmtDist = (km: number) => (km >= 1 ? km.toFixed(2) : String(Math.round(km * 1000)));
+const fmtUnit = (km: number) => (km >= 1 ? 'km' : 'm');
 
 const getRegion = (route: RoutePoint[]) => {
   const lats = route.map(p => p.lat);
   const lngs = route.map(p => p.lng);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  const latSpan = (maxLat - minLat) * 1.5 || 0.008;
-  const lngSpan = (maxLng - minLng) * 1.5 || 0.008;
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
   return {
     latitude: (minLat + maxLat) / 2,
     longitude: (minLng + maxLng) / 2,
-    latitudeDelta: latSpan,
-    longitudeDelta: lngSpan,
+    latitudeDelta: (maxLat - minLat) * 1.6 || 0.008,
+    longitudeDelta: (maxLng - minLng) * 1.6 || 0.008,
   };
 };
 
-// 폰트: Android condensed, iOS system
-const BOLD_FONT = Platform.select({
-  android: 'sans-serif-condensed',
-  ios: undefined,
-});
+const BOLD = Platform.select({android: 'sans-serif-condensed', ios: undefined});
 
-// ── 서브 컴포넌트 ──────────────────────────────
+// ── StatPill ───────────────────────────────────────────────────────────────
 
-interface StatBoxProps {
-  icon: string;
-  value: string;
-  label: string;
-  accent: string;
-}
-
-const StatBox = ({icon, value, label, accent}: StatBoxProps) => (
-  <View style={[styles.statBox, {borderTopColor: accent}]}>
-    <Text style={styles.statIcon}>{icon}</Text>
-    <Text style={[styles.statValue, {fontFamily: BOLD_FONT}]}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
+const StatPill = ({icon, value, label, sm}: {icon: string; value: string; label: string; sm: boolean}) => (
+  <View style={sp.wrap}>
+    <Text style={[sp.icon, sm && {fontSize: 12}]}>{icon}</Text>
+    <Text style={[sp.val, sm && {fontSize: 12}]} adjustsFontSizeToFit numberOfLines={1}>
+      {value}
+    </Text>
+    <Text style={[sp.lbl, sm && {fontSize: 9}]}>{label}</Text>
   </View>
 );
+const sp = StyleSheet.create({
+  wrap: {flex: 1, alignItems: 'center', gap: 1},
+  icon: {fontSize: 15},
+  val: {fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: -0.3},
+  lbl: {fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3},
+});
 
-// ── 메인 컴포넌트 ──────────────────────────────
+// ── Main ───────────────────────────────────────────────────────────────────
 
 export const RunningSlideFrame = ({frame, compact = false}: Props) => {
   const hasRoute = (frame.route?.length ?? 0) >= 2;
-  const region = hasRoute ? getRegion(frame.route!) : undefined;
-  const coordinates = hasRoute
-    ? frame.route!.map(p => ({latitude: p.lat, longitude: p.lng}))
-    : [];
+  const region   = hasRoute ? getRegion(frame.route!) : undefined;
+  const coords   = hasRoute ? frame.route!.map(p => ({latitude: p.lat, longitude: p.lng})) : [];
+
+  // 하단 통계 패널: compact 72px, full 86px
+  const PANEL_H = compact ? 72 : 86;
 
   return (
-    <View style={styles.container}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <Text style={styles.date}>{formatDate(frame.date)}</Text>
-        <Text style={styles.tag}>🏃 러닝 기록</Text>
-      </View>
+    <View style={s.root}>
 
-      {/* 거리 + 페이스/시간 */}
-      <View style={styles.distanceBlock}>
-        <Text
-          style={[
-            styles.distanceNumber,
-            compact && styles.distanceNumberCompact,
-            {fontFamily: BOLD_FONT},
-          ]}>
-          {fmtDist(frame.distanceKm)}
-        </Text>
-        <View style={styles.subRow}>
-          <Text style={styles.subItem}>
-            <Text style={styles.subEmoji}>⏱ </Text>
-            {fmtDuration(frame.durationSeconds)}
-          </Text>
-          <View style={styles.subDot} />
-          <Text style={styles.subItem}>
-            <Text style={styles.subEmoji}>👟 </Text>
-            {fmtPace(frame.avgPaceMinPerKm)}/km
-          </Text>
-        </View>
-      </View>
-
-      {/* GPS 지도 */}
-      <View style={[styles.routeBox, compact && styles.routeBoxCompact]}>
+      {/* ── 지도 — 패널 위 공간 전부 차지 ──────────────────────── */}
+      <View style={s.mapWrap}>
         {hasRoute && region ? (
           <MapView
-            style={styles.map}
+            style={StyleSheet.absoluteFill}
             initialRegion={region}
             scrollEnabled={false}
             zoomEnabled={false}
@@ -124,153 +85,124 @@ export const RunningSlideFrame = ({frame, compact = false}: Props) => {
             pitchEnabled={false}
             pointerEvents="none">
             <Polyline
-              coordinates={coordinates}
-              strokeColor="#4CAF50"
-              strokeWidth={5}
+              coordinates={coords}
+              strokeColor="#34D399"
+              strokeWidth={compact ? 4 : 5}
               lineCap="round"
               lineJoin="round"
             />
-            <Marker
-              coordinate={coordinates[0]}
-              pinColor="#2196F3"
-              title="출발"
-            />
-            <Marker
-              coordinate={coordinates[coordinates.length - 1]}
-              pinColor="#F44336"
-              title="도착"
-            />
+            <Marker coordinate={coords[0]}                  pinColor="#60A5FA" title="출발" />
+            <Marker coordinate={coords[coords.length - 1]} pinColor="#F87171" title="도착" />
           </MapView>
         ) : (
-          <View style={styles.noRouteBox}>
-            <Text style={styles.noRouteIcon}>🗺️</Text>
-            <Text style={styles.noRouteTxt}>경로 데이터 없음</Text>
+          <View style={s.noMap}>
+            <Text style={[s.noMapIco, compact && {fontSize: 28}]}>🗺️</Text>
+            <Text style={[s.noMapTxt, compact && {fontSize: 11}]}>GPS 경로 없음</Text>
           </View>
         )}
+
+        {/* 날짜 + 태그 — 지도 위 오버레이 */}
+        <View style={s.topOverlay}>
+          <View style={s.tagChip}>
+            <Text style={[s.tagTxt, compact && {fontSize: 10}]}>🏃 러닝 기록</Text>
+          </View>
+          <Text style={[s.dateTxt, compact && {fontSize: 10}]}>{formatDate(frame.date)}</Text>
+        </View>
+
+        {/* 거리 — 지도 하단 중앙 오버레이 */}
+        <View style={s.distOverlay}>
+          <View style={s.distBg}>
+            <Text style={[s.distNum, compact && s.distNumSm, {fontFamily: BOLD}]}>
+              {fmtDist(frame.distanceKm)}
+            </Text>
+            <Text style={[s.distUnit, compact && s.distUnitSm]}>
+              {fmtUnit(frame.distanceKm)}
+            </Text>
+          </View>
+        </View>
+
+        {/* 하단 그라디언트 페이드 */}
+        <View style={s.bottomFade} />
       </View>
 
-      {/* 통계 */}
-      <View style={styles.statsRow}>
-        <StatBox
-          icon="🔥"
-          value={`${frame.calories}`}
-          label="칼로리"
-          accent="#FF7043"
-        />
-        <StatBox
-          icon="👟"
-          value={fmtPace(frame.avgPaceMinPerKm)}
-          label="페이스"
-          accent="#FFD600"
-        />
-        <StatBox
-          icon="⏱"
-          value={fmtDuration(frame.durationSeconds)}
-          label="시간"
-          accent="#64B5F6"
-        />
-      </View>
-
-      {/* 워터마크 */}
-      <View style={styles.watermarkRow}>
-        <View style={styles.wDot} />
-        <Text style={styles.watermark}>kelpus</Text>
+      {/* ── 통계 패널 — 고정 높이 ──────────────────────────────── */}
+      <View style={[s.panel, {height: PANEL_H}]}>
+        <View style={s.statsRow}>
+          <StatPill icon="⏱" value={fmtDuration(frame.durationSeconds)} label="시간"   sm={compact} />
+          <View style={s.sep} />
+          <StatPill icon="👟" value={`${fmtPace(frame.avgPaceMinPerKm)}/km`} label="페이스" sm={compact} />
+          <View style={s.sep} />
+          <StatPill icon="🔥" value={`${frame.calories}`}                label="kcal"  sm={compact} />
+        </View>
+        <View style={s.wRow}>
+          <View style={s.wDot} />
+          <Text style={[s.wTxt, compact && {fontSize: 9}]}>kelpus</Text>
+        </View>
       </View>
     </View>
   );
 };
 
-// ── 스타일 ────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A1929',
-    padding: 20,
-    justifyContent: 'space-between',
-  },
-
-  // 헤더
-  header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'},
-  date: {fontSize: 15, color: 'rgba(255,255,255,0.55)', letterSpacing: 0.5},
-  tag: {
-    fontSize: 13,
-    color: '#64B5F6',
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-
-  // 거리
-  distanceBlock: {gap: 5},
-  distanceNumber: {
-    fontSize: 52,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    lineHeight: 58,
-    letterSpacing: -1,
-    includeFontPadding: false,
-  },
-  distanceNumberCompact: {fontSize: 40, lineHeight: 46, letterSpacing: -0.5},
-  subRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
-  subItem: {fontSize: 15, color: 'rgba(255,255,255,0.75)', fontWeight: '500'},
-  subEmoji: {fontSize: 12},
-  subDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
+const s = StyleSheet.create({
+  root: {flex: 1, backgroundColor: '#0A1929'},
 
   // 지도
-  routeBox: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginVertical: 8,
-    backgroundColor: '#E8F4FD',
-    minHeight: 80,
+  mapWrap: {flex: 1, overflow: 'hidden', backgroundColor: '#162740'},
+  noMap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#0D2037',
   },
-  routeBoxCompact: {maxHeight: 160},
-  map: {flex: 1},
-  noRouteBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#162740',
-  },
-  noRouteIcon: {fontSize: 32},
-  noRouteTxt: {fontSize: 13, color: 'rgba(255,255,255,0.45)'},
+  noMapIco: {fontSize: 40},
+  noMapTxt: {fontSize: 13, color: 'rgba(255,255,255,0.4)'},
 
-  // 통계
-  statsRow: {flexDirection: 'row', gap: 8},
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderTopWidth: 2,
+  // 상단 오버레이
+  topOverlay: {
+    position: 'absolute', top: 10, left: 10, right: 10,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  statIcon: {fontSize: 20, marginBottom: 4},
-  statValue: {fontSize: 20, fontWeight: '800', color: '#FFFFFF'},
-  statLabel: {fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2, letterSpacing: 0.5},
+  tagChip: {
+    backgroundColor: 'rgba(10,25,41,0.72)',
+    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
+    borderWidth: 1, borderColor: 'rgba(52,211,153,0.35)',
+  },
+  tagTxt: {fontSize: 12, color: '#34D399', fontWeight: '700'},
+  dateTxt: {fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500'},
 
-  // 워터마크
-  watermarkRow: {
-    flexDirection: 'row',
+  // 거리 오버레이 (지도 하단 중앙)
+  distOverlay: {
+    position: 'absolute', bottom: 36, left: 0, right: 0,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 5,
-    marginTop: 2,
   },
-  wDot: {width: 6, height: 6, borderRadius: 3, backgroundColor: '#64B5F6'},
-  watermark: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
-    fontWeight: '700',
-    letterSpacing: 2,
+  distBg: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 5,
+    backgroundColor: 'rgba(8,20,36,0.75)',
+    paddingHorizontal: 18, paddingVertical: 8, borderRadius: 18,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
+  distNum: {
+    fontSize: 54, fontWeight: '900', color: '#fff',
+    letterSpacing: -2, lineHeight: 58, includeFontPadding: false,
+  },
+  distNumSm: {fontSize: 42, lineHeight: 46, letterSpacing: -1},
+  distUnit: {fontSize: 22, fontWeight: '700', color: 'rgba(255,255,255,0.65)', marginBottom: 6},
+  distUnitSm: {fontSize: 17, marginBottom: 4},
+
+  // 하단 페이드
+  bottomFade: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 52,
+    backgroundColor: 'rgba(8,20,36,0.85)',
+  },
+
+  // 통계 패널
+  panel: {paddingHorizontal: 14, justifyContent: 'center', gap: 6},
+  statsRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 12, paddingVertical: 8, paddingHorizontal: 8,
+  },
+  sep: {width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.12)'},
+  wRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5},
+  wDot: {width: 5, height: 5, borderRadius: 3, backgroundColor: '#34D399'},
+  wTxt: {fontSize: 10, color: 'rgba(255,255,255,0.28)', fontWeight: '700', letterSpacing: 2},
 });
