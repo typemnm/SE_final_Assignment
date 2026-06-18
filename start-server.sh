@@ -5,6 +5,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${KELPUS_ENV_FILE:-$ROOT_DIR/.envserver}"
+EXAMPLE_ENV_FILE="$ROOT_DIR/.envserver.example"
 COMPOSE_FILE="${KELPUS_COMPOSE_FILE:-$ROOT_DIR/docker-compose.server.yml}"
 DOCKER_BIN="${KELPUS_DOCKER_BIN:-docker}"
 WAIT_ATTEMPTS="${KELPUS_WAIT_ATTEMPTS:-30}"
@@ -14,34 +15,20 @@ log() { printf '[kelpus-server] %s\n' "$*"; }
 warn() { printf '[kelpus-server] WARNING: %s\n' "$*" >&2; }
 fail() { printf '[kelpus-server] ERROR: %s\n' "$*" >&2; exit 1; }
 
-required_keys=(
-  PUBLIC_API_URL API_BIND_ADDRESS API_UPSTREAM_PORT TRUSTED_PROXY_IPS
-  CORS_ALLOWED_ORIGINS POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DATABASE_URL
-  AUTO_CREATE_TABLES
-  REDIS_PASSWORD REDIS_URL JWT_SECRET_KEY JWT_ALGORITHM JWT_EXPIRE_MINUTES
-  GEMINI_API_KEY GEMINI_MODEL GEMINI_API_BASE_URL
-  FREE_PLAN_DAILY_LIMIT PREMIUM_PLAN_DAILY_LIMIT
-)
-
 read_env_value() {
   local key="$1"
   sed -n "s/^${key}=//p" "$ENV_FILE" | tail -n 1 | tr -d '\r'
 }
 
-validate_environment() {
-  [ -r "$ENV_FILE" ] || fail "Required environment file is missing or unreadable: $ENV_FILE (copy .envserver.example and fill it manually)"
+prepare_environment() {
   [ -r "$COMPOSE_FILE" ] || fail "Production Compose file is missing or unreadable: $COMPOSE_FILE"
 
-  local key value
-  for key in "${required_keys[@]}"; do
-    value="$(read_env_value "$key")"
-    [ -n "$value" ] || fail "Required setting is missing or empty in .envserver: $key"
-    case "$value" in
-      *CHANGE_ME*|*change-me*|your-*)
-        fail "Required setting still contains a placeholder: $key"
-        ;;
-    esac
-  done
+  if [ ! -e "$ENV_FILE" ]; then
+    [ -r "$EXAMPLE_ENV_FILE" ] || fail "Example environment file is missing or unreadable: $EXAMPLE_ENV_FILE"
+    warn "$ENV_FILE not found; copying test defaults from $EXAMPLE_ENV_FILE"
+    install -m 600 "$EXAMPLE_ENV_FILE" "$ENV_FILE"
+  fi
+  [ -r "$ENV_FILE" ] || fail "Environment file is unreadable: $ENV_FILE"
 
   [ "$(read_env_value PUBLIC_API_URL)" = "https://kelpusapi.duckdns.org" ] \
     || fail "PUBLIC_API_URL must be https://kelpusapi.duckdns.org"
@@ -87,7 +74,7 @@ wait_for_service() {
   return 1
 }
 
-validate_environment
+prepare_environment
 command -v "$DOCKER_BIN" >/dev/null 2>&1 || fail "Docker is not installed or not available in PATH"
 "$DOCKER_BIN" compose version >/dev/null 2>&1 || fail "Docker Compose v2 is unavailable"
 export KELPUS_RUNTIME_ENV_FILE="$ENV_FILE"

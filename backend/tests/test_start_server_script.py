@@ -38,8 +38,8 @@ def run_launcher(env_file: Path, compose_file: Path, docker_bin: Path) -> subpro
 
 
 def populated_environment() -> str:
-    return EXAMPLE_ENV.read_text().replace("CHANGE_ME", "TEST_VALUE").replace(
-        "TRUSTED_PROXY_IPS=TEST_VALUE_NPM_LAN_IP_OR_CIDR",
+    return EXAMPLE_ENV.read_text().replace(
+        "TRUSTED_PROXY_IPS=127.0.0.1",
         "TRUSTED_PROXY_IPS=192.0.2.10",
     )
 
@@ -52,30 +52,38 @@ class StartServerScriptTests(unittest.TestCase):
         self.assertIn(".env.*", patterns)
         self.assertIn("!.env.example", patterns)
 
-    def test_missing_env_fails_before_docker(self) -> None:
+    def test_missing_env_is_created_from_example_before_docker(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temp = Path(directory)
+            env_file = temp / "missing.env"
             result = run_launcher(
-                temp / "missing.env",
+                env_file,
                 ROOT / "docker-compose.server.yml",
                 temp / "missing-docker",
             )
+            generated_environment = env_file.read_text()
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("environment file is missing", result.stderr)
-        self.assertNotIn("Docker is not installed", result.stderr)
+        self.assertIn("Docker is not installed", result.stderr)
+        self.assertEqual(generated_environment, EXAMPLE_ENV.read_text())
 
-    def test_placeholder_env_fails_without_printing_value(self) -> None:
+    def test_placeholder_credentials_do_not_block_test_launch(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temp = Path(directory)
             env_file = temp / ".envserver"
-            env_file.write_text(EXAMPLE_ENV.read_text())
+            env_file.write_text(
+                EXAMPLE_ENV.read_text().replace(
+                    "JWT_SECRET_KEY=kelpus-test-jwt-secret-do-not-use-in-production",
+                    "JWT_SECRET_KEY=CHANGE_ME_FOR_THIS_TEST",
+                )
+            )
             compose_file = temp / "compose.yml"
             compose_file.write_text("services: {}\n")
             result = run_launcher(env_file, compose_file, temp / "missing-docker")
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("contains a placeholder", result.stderr)
+        self.assertIn("Docker is not installed", result.stderr)
+        self.assertNotIn("contains a placeholder", result.stderr)
         self.assertNotIn("CHANGE_ME_NPM", result.stderr)
 
     def test_unrestricted_proxy_trust_is_rejected(self) -> None:
@@ -98,9 +106,9 @@ class StartServerScriptTests(unittest.TestCase):
 
     def test_container_dependencies_must_not_use_localhost(self) -> None:
         replacements = {
-            "DATABASE_URL=postgresql+asyncpg://kelpus:TEST_VALUE_URL_ENCODED_DATABASE_PASSWORD@postgres:5432/kelpus":
+            "DATABASE_URL=postgresql+asyncpg://kelpus:kelpus_password@postgres:5432/kelpus":
                 "DATABASE_URL=postgresql+asyncpg://kelpus:password@localhost:5432/kelpus",
-            "REDIS_URL=redis://:TEST_VALUE_URL_ENCODED_REDIS_PASSWORD@redis:6379/0":
+            "REDIS_URL=redis://:kelpus_redis_password@redis:6379/0":
                 "REDIS_URL=redis://:password@localhost:6379/0",
         }
         for valid_line, invalid_line in replacements.items():
@@ -151,7 +159,7 @@ class StartServerScriptTests(unittest.TestCase):
         self.assertNotIn("app.seed", commands)
         self.assertNotIn("compose down", commands)
         self.assertNotIn("volume rm", commands)
-        self.assertNotIn("TEST_VALUE", result.stdout + result.stderr)
+        self.assertNotIn("kelpus_password", result.stdout + result.stderr)
 
     def test_compose_uses_the_same_runtime_env_override(self) -> None:
         compose = (ROOT / "docker-compose.server.yml").read_text()

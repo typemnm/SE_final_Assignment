@@ -24,14 +24,16 @@ TLS 인증서를 설치하거나 컨테이너 포트를 `30001`로 맞출 필요
 
 ## 1. 운영 환경 파일 준비
 
-실제 비밀값은 자동 생성하거나 개발용 파일에서 복사하지 않습니다.
+`start-server.sh`는 `.envserver`가 없으면 테스트용 기본값이 든 `.envserver.example`을
+자동으로 복사합니다. 로컬 테스트에서는 별도의 크리덴셜 설정 없이 바로 실행할 수 있습니다.
 
 ```bash
 cp .envserver.example .envserver
 chmod 600 .envserver
 ```
 
-`.envserver`의 모든 `CHANGE_ME` 값을 운영자가 직접 교체합니다. 이 파일은 Git에서
+외부에 공개하기 전에는 `.envserver`의 테스트용 비밀번호, JWT 키, Gemini 키 및 프록시
+주소를 운영자가 직접 교체해야 합니다. 이 파일은 Git에서
 제외되며 커밋하면 안 됩니다. `backend/.dockerignore`는 개발용 `backend/.env`가 이미지에
 포함되지 않도록 차단합니다. 특히 다음 값을 확인하십시오.
 
@@ -59,7 +61,7 @@ NPM 관리자 계정이나 인증서는 `.envserver`에 저장하지 않습니�
 
 스크립트는 다음 순서로 동작합니다.
 
-1. `.envserver`의 필수 키와 placeholder를 Docker 변경 전에 검증
+1. `.envserver`가 없으면 테스트용 예제 파일을 자동 복사 (크리덴셜 유효성은 검사하지 않음)
 2. `docker-compose.server.yml` 유효성 검사
 3. FastAPI 이미지 빌드 후 PostgreSQL과 Redis 기동
 4. PostgreSQL과 Redis 준비 상태 확인
