@@ -96,6 +96,25 @@ class StartServerScriptTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("only the NPM host", result.stderr)
 
+    def test_container_dependencies_must_not_use_localhost(self) -> None:
+        replacements = {
+            "DATABASE_URL=postgresql+asyncpg://kelpus:TEST_VALUE_URL_ENCODED_DATABASE_PASSWORD@postgres:5432/kelpus":
+                "DATABASE_URL=postgresql+asyncpg://kelpus:password@localhost:5432/kelpus",
+            "REDIS_URL=redis://:TEST_VALUE_URL_ENCODED_REDIS_PASSWORD@redis:6379/0":
+                "REDIS_URL=redis://:password@localhost:6379/0",
+        }
+        for valid_line, invalid_line in replacements.items():
+            with self.subTest(setting=valid_line.split("=", 1)[0]), tempfile.TemporaryDirectory() as directory:
+                temp = Path(directory)
+                env_file = temp / ".envserver"
+                env_file.write_text(populated_environment().replace(valid_line, invalid_line))
+                compose_file = temp / "compose.yml"
+                compose_file.write_text("services: {}\n")
+                result = run_launcher(env_file, compose_file, temp / "missing-docker")
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Compose hostname", result.stderr)
+
     def test_valid_env_runs_non_destructive_command_flow(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temp = Path(directory)
@@ -122,7 +141,7 @@ class StartServerScriptTests(unittest.TestCase):
         self.assertIn("up -d postgres redis", commands)
         stop_position = commands.index("stop backend")
         migration_position = commands.index(
-            "run --rm --no-deps backend alembic upgrade head"
+            "run --rm --no-deps backend python -m alembic upgrade head"
         )
         backend_start_position = commands.index("up -d backend")
         self.assertLess(stop_position, migration_position)
@@ -138,6 +157,8 @@ class StartServerScriptTests(unittest.TestCase):
         compose = (ROOT / "docker-compose.server.yml").read_text()
 
         self.assertIn("${KELPUS_RUNTIME_ENV_FILE:-./.envserver}", compose)
+        self.assertIn("working_dir: /app", compose)
+        self.assertIn("PYTHONPATH: /app", compose)
 
 
 if __name__ == "__main__":

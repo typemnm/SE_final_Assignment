@@ -35,9 +35,12 @@ services:
   backend:
     build:
       context: ./backend
+    working_dir: /app
     restart: unless-stopped
     env_file:
       - ${KELPUS_RUNTIME_ENV_FILE:-./.envserver}
+    environment:
+      PYTHONPATH: /app
     ports:
       - "${API_BIND_ADDRESS:-0.0.0.0}:${API_UPSTREAM_PORT:-8000}:8000"
     depends_on:

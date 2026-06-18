@@ -48,6 +48,15 @@ validate_environment() {
   [ "$(read_env_value AUTO_CREATE_TABLES)" = "false" ] \
     || fail "AUTO_CREATE_TABLES must be false so Alembic remains the production schema authority"
 
+  case "$(read_env_value DATABASE_URL)" in
+    postgresql+asyncpg://*@postgres:*) ;;
+    *) fail "DATABASE_URL must use the production Compose hostname: postgres" ;;
+  esac
+  case "$(read_env_value REDIS_URL)" in
+    redis://*@redis:*) ;;
+    *) fail "REDIS_URL must use the production Compose hostname: redis" ;;
+  esac
+
   local trusted_proxy_ips
   trusted_proxy_ips="$(read_env_value TRUSTED_PROXY_IPS)"
   trusted_proxy_ips="${trusted_proxy_ips//[[:space:]]/}"
@@ -112,7 +121,7 @@ log "Stopping the previous FastAPI container before migration"
 "${compose[@]}" stop backend
 
 log "Applying database migrations"
-"${compose[@]}" run --rm --no-deps backend alembic upgrade head
+"${compose[@]}" run --rm --no-deps backend python -m alembic upgrade head
 
 log "Starting FastAPI"
 "${compose[@]}" up -d backend
