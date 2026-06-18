@@ -19,6 +19,7 @@ export const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const validate = (): boolean => {
     const newErrors: {email?: string; password?: string} = {};
@@ -30,10 +31,11 @@ export const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!validate()) return;
+    setLoginError(null);
     try {
-      await login({email, password});
-    } catch {
-      Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
+      await login({email, password}).unwrap();
+    } catch (err: unknown) {
+      setLoginError(typeof err === 'string' ? err : '로그인에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -65,7 +67,7 @@ export const LoginScreen = () => {
       <Input
         label="이메일"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={text => { setEmail(text); setLoginError(null); }}
         keyboardType="email-address"
         error={errors.email}
         placeholder="email@example.com"
@@ -73,11 +75,12 @@ export const LoginScreen = () => {
       <Input
         label="비밀번호"
         value={password}
-        onChangeText={setPassword}
+        onChangeText={text => { setPassword(text); setLoginError(null); }}
         secureTextEntry
         error={errors.password}
         placeholder="8자 이상 입력"
       />
+      {loginError ? <Text style={styles.loginError}>{loginError}</Text> : null}
       <Button title="로그인" onPress={handleLogin} loading={loading} />
       <View style={styles.dividerRow}>
         <View style={styles.divider} />
@@ -107,4 +110,5 @@ const styles = StyleSheet.create({
   signUpRow: {flexDirection: 'row', justifyContent: 'center', marginTop: spacing.md},
   signUpText: {...typography.body2, color: colors.text.secondary},
   signUpLink: {...typography.body2, color: colors.primary, fontWeight: '600'},
+  loginError: {...typography.body2, color: colors.error ?? '#D32F2F', textAlign: 'center', marginBottom: spacing.sm},
 });

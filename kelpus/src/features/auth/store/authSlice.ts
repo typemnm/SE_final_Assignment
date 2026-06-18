@@ -82,14 +82,14 @@ export const socialLoginThunk = createAsyncThunk(
   },
 );
 
-export const logoutThunk = createAsyncThunk('auth/logout', async (_, {rejectWithValue}) => {
+export const logoutThunk = createAsyncThunk('auth/logout', async () => {
   try {
     await authApi.logout();
-    await clearTokens();
-    await removeStorage('auth_user');
   } catch {
-    return rejectWithValue('로그아웃 처리 중 오류가 발생했습니다.');
+    // 서버가 상태 없음(stateless)이므로 API 실패여도 로컬 세션은 항상 정리
   }
+  await clearTokens();
+  await removeStorage('auth_user');
 });
 
 export const deleteAccountThunk = createAsyncThunk('auth/deleteAccount', async (_, {rejectWithValue}) => {
