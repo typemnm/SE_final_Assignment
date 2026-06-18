@@ -1,3 +1,7 @@
+/**
+ * 웹 전용: react-native-linear-gradient 미지원
+ * CSS linear-gradient 인라인 스타일로 대체
+ */
 import React from 'react';
 import {
   TouchableOpacity,
@@ -6,7 +10,6 @@ import {
   ActivityIndicator,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import {colors, typography, spacing} from '@theme/index';
 
 interface ButtonProps {
@@ -28,49 +31,12 @@ export const Button = ({
 }: ButtonProps) => {
   const isDisabled = disabled || loading;
 
-  if (variant === 'primary') {
-    return (
-      <TouchableOpacity
-        onPress={onPress}
-        disabled={isDisabled}
-        activeOpacity={0.85}
-        style={[styles.touchable, fullWidth && styles.fullWidth, isDisabled && styles.disabled]}>
-        <LinearGradient
-          colors={colors.gradient.button as unknown as string[]}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.gradientBase}>
-          {loading ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <Text style={[styles.text, styles.primaryText]}>{title}</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
-
-  if (variant === 'accent') {
-    return (
-      <TouchableOpacity
-        onPress={onPress}
-        disabled={isDisabled}
-        activeOpacity={0.85}
-        style={[styles.touchable, fullWidth && styles.fullWidth, isDisabled && styles.disabled]}>
-        <LinearGradient
-          colors={colors.gradient.accent as unknown as string[]}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.gradientBase}>
-          {loading ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <Text style={[styles.text, styles.accentText]}>{title}</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
+  const gradientStyle =
+    variant === 'primary'
+      ? {background: `linear-gradient(90deg, ${colors.gradient.button[0]}, ${colors.gradient.button[1]})`}
+      : variant === 'accent'
+      ? {background: `linear-gradient(90deg, ${colors.gradient.accent[0]}, ${colors.gradient.accent[1]})`}
+      : {};
 
   if (variant === 'outline') {
     return (
@@ -79,7 +45,7 @@ export const Button = ({
         disabled={isDisabled}
         activeOpacity={0.75}
         style={[
-          styles.touchable,
+          styles.base,
           styles.outlineBase,
           fullWidth && styles.fullWidth,
           isDisabled && styles.disabled,
@@ -93,29 +59,49 @@ export const Button = ({
     );
   }
 
-  // ghost — 텍스트만
+  if (variant === 'ghost') {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={isDisabled}
+        activeOpacity={0.7}
+        style={[styles.base, fullWidth && styles.fullWidth, isDisabled && styles.disabled]}>
+        {loading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <Text style={[styles.text, styles.ghostText]}>{title}</Text>
+        )}
+      </TouchableOpacity>
+    );
+  }
+
+  // primary / accent — CSS gradient
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.7}
-      style={[styles.touchable, fullWidth && styles.fullWidth, isDisabled && styles.disabled]}>
-      {loading ? (
-        <ActivityIndicator color={colors.primary} />
-      ) : (
-        <Text style={[styles.text, styles.ghostText]}>{title}</Text>
-      )}
+      activeOpacity={0.85}
+      style={[styles.base, fullWidth && styles.fullWidth, isDisabled && styles.disabled]}>
+      <View style={[styles.gradientFill, gradientStyle as any]}>
+        {loading ? (
+          <ActivityIndicator color={colors.text.inverse} />
+        ) : (
+          <Text style={[styles.text, variant === 'accent' ? styles.accentText : styles.primaryText]}>
+            {title}
+          </Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  touchable: {
+  base: {
     borderRadius: 16,
     overflow: 'hidden',
   },
   fullWidth: {alignSelf: 'stretch'},
-  gradientBase: {
+  gradientFill: {
     paddingVertical: spacing.md + 2,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

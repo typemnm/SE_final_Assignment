@@ -1,7 +1,6 @@
 // 테스트용 샘플 러닝 기록
 // 경로: 창원대학교 정문 버스정류장 → 공대 55호관 → 창원중앙역 → 21호관 → 정문 (5.43km)
 // GPS: OSRM 실제 도로 기반
-const BASE_MS = new Date('2026-06-07T08:00:00Z').getTime();
 const TOTAL_SEC = 1854;
 
 const RAW: Array<[number, number, number]> = [
@@ -54,17 +53,24 @@ const RAW: Array<[number, number, number]> = [
 
 const SEC_PER_POINT = TOTAL_SEC / (RAW.length - 1);
 
-export const SAMPLE_SYNC_REQUEST = {
-  distance: 5.43,
-  avg_pace: 5.7,
-  duration_seconds: TOTAL_SEC,
-  calories: 378,
-  recorded_at: new Date(BASE_MS).toISOString(),
-  external_id: 'sample-cwnu-55-jungang-21-v3-2026',
-  gps_coordinates: RAW.map(([lat, lng, altitude], i) => ({
-    lat,
-    lng,
-    altitude,
-    timestamp: new Date(BASE_MS + i * SEC_PER_POINT * 1000).toISOString(),
-  })),
+// Generates a new sample with today's date and a unique ID — call each time you want to add one
+export const makeSampleSyncRequest = () => {
+  // Recorded ~1–3 hours before now so it appears as "today" in the calendar
+  const offsetMs = (1 + Math.random() * 2) * 60 * 60 * 1000;
+  const baseMs = Date.now() - offsetMs;
+  const uniqueId = `sample-cwnu-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
+  return {
+    distance: 5.43,
+    avg_pace: 5.7,
+    duration_seconds: TOTAL_SEC,
+    calories: 378,
+    recorded_at: new Date(baseMs).toISOString(),
+    external_id: uniqueId,
+    gps_coordinates: RAW.map(([lat, lng, altitude], i) => ({
+      lat,
+      lng,
+      altitude,
+      timestamp: new Date(baseMs + i * SEC_PER_POINT * 1000).toISOString(),
+    })),
+  };
 };

@@ -12,7 +12,7 @@ import {
   setCoursesLoading,
 } from '../store/runningSlice';
 import {runningService} from '../services/runningService';
-import {SAMPLE_SYNC_REQUEST} from '../data/sampleRun';
+import {makeSampleSyncRequest} from '../data/sampleRun';
 import type {LeaderboardCriterion, LeaderboardPeriod} from '../types';
 
 export const useRunning = () => {
@@ -92,7 +92,7 @@ export const useRunning = () => {
   const addSampleRun = useCallback(async () => {
     dispatch(setLoading(true));
     try {
-      await runningService.syncRecord(SAMPLE_SYNC_REQUEST);
+      await runningService.syncRecord(makeSampleSyncRequest());
       const updated = await runningService.listRecords();
       dispatch(setRecords(updated as any[]));
     } finally {

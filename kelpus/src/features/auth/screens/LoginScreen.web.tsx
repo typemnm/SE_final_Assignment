@@ -1,3 +1,7 @@
+/**
+ * Web-only: react-native-linear-gradient / react-native-vector-icons not supported on web.
+ * CSS linear-gradient via inline style, text-based icons.
+ */
 import React, {useState} from 'react';
 import {
   View,
@@ -6,13 +10,8 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  StatusBar,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../hooks/useAuth';
 import {SocialLoginButton} from '../components/SocialLoginButton';
@@ -32,8 +31,17 @@ const CARD_BORDER_TOP = 'rgba(45, 74, 60, 0.5)';
 const CARD_BORDER_SIDE = 'rgba(45, 74, 60, 0.25)';
 const DIVIDER_COLOR = 'rgba(45, 74, 60, 0.4)';
 
+// Simple text icons (no native library)
+const WEB_ICONS: Record<string, string> = {
+  email: '✉',
+  lock: '⚿',
+  visibility: '◉',
+  'visibility-off': '○',
+  check: '✓',
+};
+
 // ─────────────────────────────────────────────────────────
-// GlassInput
+// GlassInput (web)
 // ─────────────────────────────────────────────────────────
 interface GlassInputProps {
   iconName: string;
@@ -63,12 +71,9 @@ const GlassInput = ({
   return (
     <View style={gi.container}>
       <View style={[gi.wrap, focused && gi.wrapFocused, !!error && gi.wrapError]}>
-        <Icon
-          name={iconName}
-          size={18}
-          color={focused ? INPUT_BORDER_FOCUS : '#5A7A6A'}
-          style={gi.leftIcon}
-        />
+        <Text style={[gi.leftIcon, {color: focused ? INPUT_BORDER_FOCUS : '#5A7A6A'}]}>
+          {WEB_ICONS[iconName] ?? '·'}
+        </Text>
         <TextInput
           style={gi.input}
           value={value}
@@ -83,11 +88,8 @@ const GlassInput = ({
           onBlur={() => setFocused(false)}
         />
         {rightIconName && (
-          <TouchableOpacity
-            onPress={onRightIconPress}
-            style={gi.rightIcon}
-            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-            <Icon name={rightIconName} size={18} color="#5A7A6A" />
+          <TouchableOpacity onPress={onRightIconPress} style={gi.rightIcon}>
+            <Text style={gi.rightIconText}>{WEB_ICONS[rightIconName] ?? '·'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -112,7 +114,7 @@ const gi = StyleSheet.create({
     backgroundColor: 'rgba(52, 211, 153, 0.04)',
   },
   wrapError: {borderColor: colors.error},
-  leftIcon: {paddingHorizontal: 14},
+  leftIcon: {fontSize: 16, paddingHorizontal: 14},
   input: {
     flex: 1,
     color: colors.text.primary,
@@ -121,11 +123,12 @@ const gi = StyleSheet.create({
     paddingRight: 8,
   },
   rightIcon: {paddingHorizontal: 14},
+  rightIconText: {fontSize: 16, color: '#5A7A6A'},
   error: {color: colors.error, fontSize: 12, marginTop: 4, marginLeft: 4},
 });
 
 // ─────────────────────────────────────────────────────────
-// LoginScreen
+// LoginScreen (web)
 // ─────────────────────────────────────────────────────────
 export const LoginScreen = () => {
   const navigation = useNavigation<AuthNavigationProp>();
@@ -136,7 +139,6 @@ export const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
-  const [loginError, setLoginError] = useState<string | null>(null);
 
   const validate = (): boolean => {
     const newErrors: {email?: string; password?: string} = {};
@@ -148,11 +150,10 @@ export const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!validate()) return;
-    setLoginError(null);
     try {
-      await login({email, password}).unwrap();
-    } catch (err: unknown) {
-      setLoginError(typeof err === 'string' ? err : '로그인에 실패했습니다. 다시 시도해주세요.');
+      await login({email, password});
+    } catch {
+      Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -178,115 +179,103 @@ export const LoginScreen = () => {
   };
 
   return (
-    <LinearGradient
-      colors={['#03170E', '#0A1F15']}
-      start={{x: 0.5, y: 0}}
-      end={{x: 0.5, y: 1}}
-      style={s.bg}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-      {/* Forest glow — simulates radial gradient from top center */}
+    <View style={[s.bg, {background: 'linear-gradient(to bottom, #03170E, #0A1F15)'} as any]}>
+      {/* Decorative orbs */}
       <View style={s.topOrb} />
       <View style={s.bottomOrb} />
 
-      <KeyboardAvoidingView
-        style={s.kav}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={s.scroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
 
-          {/* ── Logo ── */}
-          <View style={s.logoSection}>
-            <View style={s.logoBox}>
-              <Text style={s.logoLetter}>K</Text>
-            </View>
-            <Text style={s.appName}>KELPUS</Text>
-            <Text style={s.tagline}>새벽 숲의 상쾌함을 담은 헬스케어</Text>
+        {/* ── Logo ── */}
+        <View style={s.logoSection}>
+          <View style={s.logoBox}>
+            <Text style={s.logoLetter}>K</Text>
           </View>
+          <Text style={s.appName}>KELPUS</Text>
+          <Text style={s.tagline}>새벽 숲의 상쾌함을 담은 헬스케어</Text>
+        </View>
 
-          {/* ── Glass form card ── */}
-          <View style={s.card}>
-            <GlassInput
-              iconName="email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="이메일"
-              keyboardType="email-address"
-              error={errors.email}
-            />
-            <GlassInput
-              iconName="lock"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="비밀번호 (8자 이상)"
-              secureTextEntry={!showPassword}
-              error={errors.password}
-              rightIconName={showPassword ? 'visibility-off' : 'visibility'}
-              onRightIconPress={() => setShowPassword(v => !v)}
-            />
+        {/* ── Glass form card ── */}
+        <View style={s.card}>
+          <GlassInput
+            iconName="email"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="이메일"
+            keyboardType="email-address"
+            error={errors.email}
+          />
+          <GlassInput
+            iconName="lock"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="비밀번호 (8자 이상)"
+            secureTextEntry={!showPassword}
+            error={errors.password}
+            rightIconName={showPassword ? 'visibility-off' : 'visibility'}
+            onRightIconPress={() => setShowPassword(v => !v)}
+          />
 
-            <View style={s.optionRow}>
-              <TouchableOpacity
-                style={s.checkRow}
-                onPress={() => setRememberMe(v => !v)}
-                activeOpacity={0.7}>
-                <View style={[s.checkbox, rememberMe && s.checkboxActive]}>
-                  {rememberMe && <Icon name="check" size={11} color="#03170E" />}
-                </View>
-                <Text style={s.checkLabel}>로그인 유지</Text>
-              </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.7}>
-                <Text style={s.forgotLink}>비밀번호 찾기</Text>
-              </TouchableOpacity>
-            </View>
-
-            {loginError ? <Text style={s.loginError}>{loginError}</Text> : null}
-
+          <View style={s.optionRow}>
             <TouchableOpacity
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.85}
-              style={[s.loginBtn, loading && s.loginBtnDisabled]}>
-              <LinearGradient
-                colors={['#18A479', '#5AF0B3']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 1}}
-                style={s.loginBtnGradient}>
-                <Text style={s.loginBtnText}>
-                  {loading ? '로그인 중...' : '로그인'}
-                </Text>
-              </LinearGradient>
+              style={s.checkRow}
+              onPress={() => setRememberMe(v => !v)}
+              activeOpacity={0.7}>
+              <View style={[s.checkbox, rememberMe && s.checkboxActive]}>
+                {rememberMe && <Text style={s.checkMark}>✓</Text>}
+              </View>
+              <Text style={s.checkLabel}>로그인 유지</Text>
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.7}>
+              <Text style={s.forgotLink}>비밀번호 찾기</Text>
             </TouchableOpacity>
           </View>
 
-          {/* ── Social divider ── */}
-          <View style={s.dividerRow}>
-            <View style={s.dividerLine} />
-            <Text style={s.dividerText}>또는 소셜 계정으로 로그인</Text>
-            <View style={s.dividerLine} />
-          </View>
+          {/* Login button — CSS gradient */}
+          <TouchableOpacity
+            onPress={handleLogin}
+            disabled={loading}
+            activeOpacity={0.85}
+            style={[s.loginBtn, loading && s.loginBtnDisabled]}>
+            <View
+              style={[
+                s.loginBtnGradient,
+                {background: 'linear-gradient(135deg, #18A479, #5AF0B3)'} as any,
+              ]}>
+              <Text style={s.loginBtnText}>
+                {loading ? '로그인 중...' : '로그인'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-          <SocialLoginButton provider="kakao" onPress={() => handleSocialLogin('kakao')} />
-          <SocialLoginButton provider="google" onPress={() => handleSocialLogin('google')} />
-          <SocialLoginButton provider="apple" onPress={() => handleSocialLogin('apple')} />
+        {/* ── Divider ── */}
+        <View style={s.dividerRow}>
+          <View style={s.dividerLine} />
+          <Text style={s.dividerText}>또는 소셜 계정으로 로그인</Text>
+          <View style={s.dividerLine} />
+        </View>
 
-          <View style={s.signUpRow}>
-            <Text style={s.signUpText}>아직 계정이 없으신가요? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')} activeOpacity={0.7}>
-              <Text style={s.signUpLink}>회원가입</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+        <SocialLoginButton provider="kakao" onPress={() => handleSocialLogin('kakao')} />
+        <SocialLoginButton provider="google" onPress={() => handleSocialLogin('google')} />
+        <SocialLoginButton provider="apple" onPress={() => handleSocialLogin('apple')} />
+
+        <View style={s.signUpRow}>
+          <Text style={s.signUpText}>아직 계정이 없으신가요? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUp')} activeOpacity={0.7}>
+            <Text style={s.signUpLink}>회원가입</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const s = StyleSheet.create({
-  bg: {flex: 1},
-  kav: {flex: 1},
+  bg: {flex: 1, backgroundColor: '#03170E'},
 
   topOrb: {
     position: 'absolute',
@@ -313,6 +302,9 @@ const s = StyleSheet.create({
     paddingTop: 72,
     paddingBottom: 40,
     justifyContent: 'center',
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
   },
 
   logoSection: {alignItems: 'center', marginBottom: 32},
@@ -342,7 +334,6 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   tagline: {
-    fontFamily: 'PlusJakartaSans',
     fontSize: 13,
     color: '#A7C4B5',
     letterSpacing: 0.3,
@@ -381,39 +372,20 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 8,
   },
-  checkboxActive: {
-    backgroundColor: '#34D399',
-    borderColor: '#34D399',
-  },
-  checkLabel: {
-    color: '#A7C4B5',
-    fontSize: 13,
-    fontFamily: 'PlusJakartaSans',
-  },
-  forgotLink: {
-    color: '#34D399',
-    fontSize: 13,
-    fontFamily: 'PlusJakartaSans',
-    fontWeight: '500',
-  },
+  checkboxActive: {backgroundColor: '#34D399', borderColor: '#34D399'},
+  checkMark: {fontSize: 11, color: '#03170E', fontWeight: '700'},
+  checkLabel: {color: '#A7C4B5', fontSize: 13},
+  forgotLink: {color: '#34D399', fontSize: 13, fontWeight: '500'},
 
-  loginBtn: {
-    borderRadius: 14,
-    shadowColor: '#34D399',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 8,
-  },
+  loginBtn: {borderRadius: 14, overflow: 'hidden'},
   loginBtnDisabled: {opacity: 0.55},
   loginBtnGradient: {
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    backgroundColor: '#18A479',
   },
   loginBtnText: {
-    fontFamily: 'PlusJakartaSans',
     fontSize: 16,
     fontWeight: '700',
     color: '#003825',
@@ -431,22 +403,9 @@ const s = StyleSheet.create({
     fontSize: 12,
     marginHorizontal: 12,
     letterSpacing: 0.3,
-    fontFamily: 'PlusJakartaSans',
   },
 
   signUpRow: {flexDirection: 'row', justifyContent: 'center', marginTop: 24},
-  signUpText: {color: '#A7C4B5', fontSize: 14, fontFamily: 'PlusJakartaSans'},
-  signUpLink: {
-    color: '#34D399',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'PlusJakartaSans',
-  },
-  loginError: {
-    color: '#FF6B6B',
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: 12,
-    fontFamily: 'PlusJakartaSans',
-  },
+  signUpText: {color: '#A7C4B5', fontSize: 14},
+  signUpLink: {color: '#34D399', fontSize: 14, fontWeight: '600'},
 });

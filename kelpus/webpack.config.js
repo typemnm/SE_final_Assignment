@@ -23,6 +23,7 @@ module.exports = {
       '@api': path.resolve(__dirname, 'src/api'),
       '@navigation': path.resolve(__dirname, 'src/navigation'),
       // native-only module shims
+      'react-native-linear-gradient': path.resolve(__dirname, 'src/shims/react-native-linear-gradient.js'),
       'react-native-maps': path.resolve(__dirname, 'src/shims/react-native-maps.js'),
       'react-native-health-connect': path.resolve(__dirname, 'src/shims/react-native-health-connect.js'),
       'react-native-permissions': path.resolve(__dirname, 'src/shims/react-native-permissions.js'),
