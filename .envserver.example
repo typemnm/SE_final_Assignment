@@ -1,0 +1,46 @@
+# Kelpus production server configuration
+# Copy to .envserver, replace every CHANGE_ME value, then run: chmod 600 .envserver
+
+# Public endpoint owned by Nginx Proxy Manager (informational/application use)
+PUBLIC_API_URL=https://1mnhomenetwork.iptime.org:30001
+
+# Private HTTP upstream published by the Kelpus host for NPM.
+# Set API_BIND_ADDRESS to this server's LAN IP when possible.
+API_BIND_ADDRESS=0.0.0.0
+API_UPSTREAM_PORT=8000
+TRUSTED_PROXY_IPS=CHANGE_ME_NPM_LAN_IP_OR_CIDR
+
+# Browser clients only. Native mobile HTTP requests do not require CORS.
+CORS_ALLOWED_ORIGINS=https://1mnhomenetwork.iptime.org:30001
+
+# PostgreSQL container and application connection
+POSTGRES_DB=kelpus
+POSTGRES_USER=kelpus
+POSTGRES_PASSWORD=CHANGE_ME_STRONG_DATABASE_PASSWORD
+DATABASE_URL=postgresql+asyncpg://kelpus:CHANGE_ME_URL_ENCODED_DATABASE_PASSWORD@postgres:5432/kelpus
+AUTO_CREATE_TABLES=false
+
+# Redis container and application connection
+REDIS_PASSWORD=CHANGE_ME_STRONG_REDIS_PASSWORD
+REDIS_URL=redis://:CHANGE_ME_URL_ENCODED_REDIS_PASSWORD@redis:6379/0
+
+# JWT authentication
+JWT_SECRET_KEY=CHANGE_ME_RANDOM_SECRET_AT_LEAST_32_CHARACTERS
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=60
+
+# Gemini diet image analysis
+GEMINI_API_KEY=CHANGE_ME_GEMINI_API_KEY
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+GEMINI_REQUEST_TIMEOUT_SECONDS=20
+GEMINI_IMAGE_MAX_BYTES=10485760
+
+# Optional/legacy integrations. Leave explicit dummy values only when unused.
+AI_ANALYSIS_API_KEY=dummy-key
+AI_ANALYSIS_BASE_URL=https://api.openai.com/v1
+INSTAGRAM_API_TOKEN=dummy-token
+MAP_API_KEY=dummy-map-key
+
+FREE_PLAN_DAILY_LIMIT=3
+PREMIUM_PLAN_DAILY_LIMIT=10
