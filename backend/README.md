@@ -70,6 +70,10 @@ uvicorn app.main:app --reload --port 8000
 # http://localhost:8000/docs
 ```
 
+홈 서버 운영 배포는 개발용 명령 대신 저장소 루트의 `start-server.sh`와
+`docker-compose.server.yml`을 사용합니다. Nginx Proxy Manager 연동과 `.envserver`
+준비 절차는 [`docs/SERVER_DEPLOYMENT.md`](../docs/SERVER_DEPLOYMENT.md)를 참고하세요.
+
 ## Gemini 식단 이미지 분석 설정
 
 `POST /api/v1/diet/analyze`는 Gemini REST API로 식단 이미지를 분석합니다. Google SDK는 사용하지 않고 서버가 검증된 이미지 URL을 다운로드한 뒤 기존 `httpx` 의존성으로 Gemini `generateContent`에 inline image data를 전송합니다.

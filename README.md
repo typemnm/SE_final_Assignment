@@ -167,6 +167,7 @@ npm run ios
 | [DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md) | 5개 도메인 엔티티 및 관계, 도메인 이벤트 |
 | [API_DESIGN.md](docs/API_DESIGN.md) | REST API 엔드포인트 명세 (요청/응답 스키마) |
 | [SEQUENCE_FLOWS.md](docs/SEQUENCE_FLOWS.md) | 주요 시나리오별 시퀀스 흐름 (Mermaid 다이어그램) |
+| [SERVER_DEPLOYMENT.md](docs/SERVER_DEPLOYMENT.md) | Nginx Proxy Manager 기반 홈 서버 API 배포 |
 
 ---
 

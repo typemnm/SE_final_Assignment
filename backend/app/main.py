@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import settings
+from app.config import Settings, settings
 from app.database import create_tables
 from app.domains.diet.router import diet_router
 from app.domains.health.router import health_router
@@ -40,8 +40,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # 시작
     logger.info("Kelpus 백엔드 시작 중...")
-    await create_tables()
-    logger.info("DB 테이블 준비 완료")
+    config: Settings = app.state.settings
+    if config.AUTO_CREATE_TABLES:
+        await create_tables()
+        logger.info("DB 테이블 준비 완료")
+    else:
+        logger.info("DB 스키마는 Alembic migration으로 관리됩니다")
 
     _crawler_task = asyncio.create_task(_sns_crawler.start_periodic_crawling())
     logger.info("SNS 크롤러 백그라운드 태스크 시작됨")
@@ -60,7 +64,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("정리 완료")
 
 
-def create_app() -> FastAPI:
+def create_app(config: Settings = settings) -> FastAPI:
     """
     FastAPI 애플리케이션 인스턴스를 생성하고 설정한다.
 
@@ -78,12 +82,13 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         lifespan=lifespan,
     )
+    app.state.settings = config
 
     # ─── CORS 미들웨어 ────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # 프로덕션에서는 특정 도메인으로 제한
-        allow_credentials=True,
+        allow_origins=config.cors_allowed_origins,
+        allow_credentials=config.cors_allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )

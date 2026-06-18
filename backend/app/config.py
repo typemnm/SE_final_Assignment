@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # 데이터베이스
     DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/kelpus_db"
+    AUTO_CREATE_TABLES: bool = True
 
     # JWT 인증
     JWT_SECRET_KEY: str = "change-me-in-production"
@@ -42,6 +43,24 @@ class Settings(BaseSettings):
 
     # Redis (피드 캐싱)
     REDIS_URL: str = "redis://localhost:6379/0"
+
+    # HTTP / reverse proxy
+    CORS_ALLOWED_ORIGINS: str = "*"
+
+    @property
+    def cors_allowed_origins(self) -> list[str]:
+        """Return normalized browser origins from a comma-separated setting."""
+        origins = [
+            origin.strip()
+            for origin in self.CORS_ALLOWED_ORIGINS.split(",")
+            if origin.strip()
+        ]
+        return origins or ["*"]
+
+    @property
+    def cors_allow_credentials(self) -> bool:
+        """Browsers forbid credentialed CORS with a wildcard origin."""
+        return "*" not in self.cors_allowed_origins
 
     class Config:
         env_file = ".env"
