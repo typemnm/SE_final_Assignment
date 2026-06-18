@@ -28,6 +28,7 @@
     "react-dom": "18.3.1",
     "react-native": "0.75.4",
     "react-native-chart-kit": "6.12.0",
+    "react-native-config": "^1.6.1",
     "react-native-gesture-handler": "2.21.2",
     "react-native-google-signin": "2.1.1",
     "react-native-health": "1.19.0",
@@ -112,7 +113,8 @@
       "^@api/(.*)$": "<rootDir>/src/api/$1",
       "^@navigation/(.*)$": "<rootDir>/src/navigation/$1",
       "\\.(png|jpg|jpeg|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
-      "^react-native-image-picker$": "<rootDir>/src/shims/react-native-image-picker.js"
+      "^react-native-image-picker$": "<rootDir>/src/shims/react-native-image-picker.js",
+      "^react-native-config$": "<rootDir>/src/shims/react-native-config.js"
     },
     "setupFiles": [
       "react-native-gesture-handler/jestSetup"

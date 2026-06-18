@@ -1,12 +1,13 @@
 // Axios 인스턴스 + 인터셉터 (인증 토큰 발급 플로우 반영)
 import axios, {AxiosInstance, InternalAxiosRequestConfig} from 'axios';
 import {Platform} from 'react-native';
+import Config from 'react-native-config';
 import {getAccessToken, getRefreshToken, updateAccessToken, clearTokens} from '@utils/tokenStorage';
 
 const getApiBaseUrl = (): string => {
-  const configuredUrl = process.env.API_BASE_URL;
+  const configuredUrl = Platform.OS === 'web' ? process.env.API_BASE_URL : Config.API_BASE_URL;
   if (configuredUrl) {
-    return configuredUrl;
+    return configuredUrl.replace(/\/$/, '');
   }
 
   if (__DEV__) {
@@ -82,7 +83,9 @@ apiClient.interceptors.response.use(
 
     try {
       const refreshToken = await getRefreshToken();
-      if (!refreshToken) throw new Error('리프레시 토큰이 없습니다.');
+      if (!refreshToken) {
+        throw new Error('리프레시 토큰이 없습니다.');
+      }
 
       // 순환 참조 방지를 위해 원시 axios 사용
       const {data} = await axios.post<{access_token: string}>(

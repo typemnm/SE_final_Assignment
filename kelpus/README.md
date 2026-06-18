@@ -156,12 +156,17 @@ npm run format     # Prettier 포매팅
 
 | 변수 | 설명 |
 |------|------|
-| `API_BASE_URL` | 백엔드 서버 주소 |
+| `API_BASE_URL` | 앱 빌드에 포함할 백엔드 서버 주소 (예: `https://kelpusapi.duckdns.org`) |
+| `APP_ENV` | 환경 식별용 메타데이터. API 주소 선택에는 사용하지 않음 |
 | `GOOGLE_MAPS_API_KEY` | 러닝 경로 지도 표시 |
 | `AI_ANALYSIS_API_KEY` | AI 식단 분석 서버 |
 | `INSTAGRAM_API_TOKEN` | SNS 피드 크롤링 |
 
 > `.env` 파일은 `.gitignore`에 등록되어 있어 절대 커밋되지 않습니다.
+> 네이티브 앱은 `react-native-config`로 `.env`를 빌드 시점에 읽습니다. 값을 바꾼 뒤에는
+> Metro 재시작만 하지 말고 앱을 다시 빌드하세요. 다른 파일을 쓸 때는
+> `ENVFILE=.env.production npm run android`처럼 `ENVFILE`을 지정합니다.
+> `.env` 값은 앱 바이너리에서 추출할 수 있으므로 서버 비밀번호나 비밀 키는 넣지 마세요.
 
 ---
 

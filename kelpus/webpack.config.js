@@ -34,6 +34,7 @@ module.exports = {
       '@react-native-kakao/user': path.resolve(__dirname, 'src/shims/react-native-kakao-user.js'),
       'react-native-health': path.resolve(__dirname, 'src/shims/react-native-health.js'),
       'react-native-image-picker': path.resolve(__dirname, 'src/shims/react-native-image-picker.js'),
+      'react-native-config': path.resolve(__dirname, 'src/shims/react-native-config.js'),
     },
   },
   module: {
@@ -71,6 +72,7 @@ module.exports = {
       __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
       'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || ''),
+      'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV || ''),
       'process.env.GOOGLE_WEB_CLIENT_ID': JSON.stringify(process.env.GOOGLE_WEB_CLIENT_ID || ''),
     }),
     new webpack.NormalModuleReplacementPlugin(
