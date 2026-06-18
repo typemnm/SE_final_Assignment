@@ -43,8 +43,8 @@ validate_environment() {
     esac
   done
 
-  [ "$(read_env_value PUBLIC_API_URL)" = "https://1mnhomenetwork.iptime.org:30001" ] \
-    || fail "PUBLIC_API_URL must be https://1mnhomenetwork.iptime.org:30001"
+  [ "$(read_env_value PUBLIC_API_URL)" = "https://kelpusapi.duckdns.org" ] \
+    || fail "PUBLIC_API_URL must be https://kelpusapi.duckdns.org"
   [ "$(read_env_value AUTO_CREATE_TABLES)" = "false" ] \
     || fail "AUTO_CREATE_TABLES must be false so Alembic remains the production schema authority"
 
