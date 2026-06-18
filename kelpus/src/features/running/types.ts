@@ -15,6 +15,7 @@ export type RunningStackParams = {
   RunningDetail: {recordId: string};
   Leaderboard: undefined;
   RunningCourses: undefined;
+  RunningStats: undefined;
 };
 
 export type TrackingStatus = 'idle' | 'tracking' | 'paused' | 'finished';

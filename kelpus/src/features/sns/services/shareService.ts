@@ -1,4 +1,5 @@
-import {Share, Linking, Platform} from 'react-native';
+import {Share, Linking, Platform, Alert} from 'react-native';
+import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 
 export interface ShareContent {
   caption: string;
@@ -10,6 +11,8 @@ export interface ShareContent {
 const buildText = ({caption, hashtags}: ShareContent): string =>
   [caption, hashtags.join(' ')].filter(Boolean).join('\n\n');
 
+export type SaveResult = 'saved' | 'shared' | 'permission_denied' | 'failed';
+
 export const shareService = {
   async canOpenInstagram(): Promise<boolean> {
     try {
@@ -20,17 +23,59 @@ export const shareService = {
   },
 
   /**
-   * Instagram Stories 공유.
+   * 기기 갤러리에 직접 저장.
    *
-   * 이미지 있을 때:
-   *   iOS  → Share.share({message, url: fileUri}) → 시스템 공유 시트에 이미지 포함
-   *           → 공유 시트에서 Instagram Stories 선택 가능
-   *   Android → 동일. Android는 url 파라미터를 무시할 수 있어서 텍스트로 폴백
-   *
-   * 이미지 없을 때:
-   *   iOS  → instagram-stories://share URL scheme (배경 색상만)
-   *   Android → instagram://app 열기 또는 네이티브 공유 시트
+   * 1순위: @react-native-camera-roll/camera-roll (설치된 경우) → 원터치 저장
+   * 2순위: iOS Share.share + url → 공유 시트에서 "이미지 저장" 가능
+   * 3순위: 실패
    */
+  async saveToDevice(fileUri: string): Promise<SaveResult> {
+    // ── CameraRoll 직접 저장 (패키지가 설치된 경우) ──────────
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {CameraRoll} = require('@react-native-camera-roll/camera-roll');
+
+      // 권한 요청
+      if (Platform.OS === 'ios') {
+        const perm = PERMISSIONS.IOS.PHOTO_LIBRARY_ADD_ONLY;
+        const current = await request(perm);
+        if (current !== RESULTS.GRANTED && current !== RESULTS.LIMITED) {
+          Alert.alert(
+            '갤러리 권한 필요',
+            '설정 > 개인 정보 보호 > 사진에서 kelpus의 접근을 "추가만"으로 허용해주세요.',
+          );
+          return 'permission_denied';
+        }
+      } else if (Platform.OS === 'android') {
+        const apiLevel = typeof Platform.Version === 'number' ? Platform.Version : 0;
+        if (apiLevel < 29) {
+          const perm = PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE;
+          const current = await request(perm);
+          if (current !== RESULTS.GRANTED) {
+            Alert.alert('저장 권한 필요', '설정에서 저장소 접근 권한을 허용해주세요.');
+            return 'permission_denied';
+          }
+        }
+        // Android 29+(Q/10+): MediaStore를 통한 저장은 권한 불필요
+      }
+
+      await CameraRoll.saveAsset(fileUri, {type: 'photo', album: 'kelpus'});
+      return 'saved';
+    } catch {
+      // CameraRoll 미설치 또는 오류 → iOS 공유 시트로 폴백
+    }
+
+    // ── iOS 공유 시트 폴백 ───────────────────────────────────
+    if (Platform.OS === 'ios') {
+      try {
+        await Share.share({message: '', url: fileUri});
+        return 'shared';
+      } catch {}
+    }
+
+    return 'failed';
+  },
+
   async shareToInstagramStories(content: ShareContent): Promise<void> {
     if (content.imageDataUrl) {
       try {
@@ -65,11 +110,6 @@ export const shareService = {
     await shareService.shareNative(content);
   },
 
-  /**
-   * Instagram 피드 공유.
-   * 이미지 있을 때 → Share.share로 공유 시트 열기 (피드 업로드 선택 가능)
-   * 이미지 없을 때 → instagram://app 열기 또는 네이티브 공유 시트
-   */
   async shareToInstagramFeed(content: ShareContent): Promise<void> {
     if (content.imageDataUrl) {
       try {
@@ -92,17 +132,12 @@ export const shareService = {
     await shareService.shareNative(content);
   },
 
-  /** 시스템 네이티브 공유 시트 */
   async shareNative(content: ShareContent): Promise<void> {
     const message = buildText(content);
     try {
       await Share.share(
         Platform.OS === 'ios'
-          ? {
-              message,
-              url: content.imageDataUrl,
-              title: 'kelpus 기록 공유',
-            }
+          ? {message, url: content.imageDataUrl, title: 'kelpus 기록 공유'}
           : {message},
       );
     } catch {}
