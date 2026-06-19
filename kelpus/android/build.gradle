@@ -20,6 +20,12 @@ buildscript {
 
 apply plugin: "com.facebook.react.rootproject"
 
+// RN 0.74+ 에서 isNewArchitectureEnabled() 함수가 RNGP 내부로 이동됨.
+// 일부 서드파티 라이브러리가 이 함수를 직접 참조하므로 fallback 정의.
+ext.isNewArchitectureEnabled = {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
 allprojects {
     repositories {
         google()
