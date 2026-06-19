@@ -25,6 +25,7 @@ module.exports = {
       // native-only module shims
       'react-native-linear-gradient': path.resolve(__dirname, 'src/shims/react-native-linear-gradient.js'),
       'react-native-maps': path.resolve(__dirname, 'src/shims/react-native-maps.js'),
+      '@mj-studio/react-native-naver-map': path.resolve(__dirname, 'src/shims/react-native-naver-map.js'),
       'react-native-health-connect': path.resolve(__dirname, 'src/shims/react-native-health-connect.js'),
       'react-native-permissions': path.resolve(__dirname, 'src/shims/react-native-permissions.js'),
       '@react-native-async-storage/async-storage': path.resolve(__dirname, 'src/shims/react-native-async-storage.js'),

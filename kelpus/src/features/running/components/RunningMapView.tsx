@@ -1,15 +1,19 @@
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, useCallback} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
-import MapView, {Polyline, Marker, PROVIDER_GOOGLE} from 'react-native-maps';
+import {
+  NaverMapView as NaverMapViewRaw,
+  NaverMapMarkerOverlay,
+  NaverMapPathOverlay,
+  type NaverMapViewProps,
+  type NaverMapViewRef,
+} from '@mj-studio/react-native-naver-map';
 import {colors} from '@theme/index';
 
-// 초기 위치 fallback: 서울 중심
-const SEOUL_REGION = {
-  latitude: 37.5665,
-  longitude: 126.978,
-  latitudeDelta: 0.01,
-  longitudeDelta: 0.01,
-};
+const NaverMapView = NaverMapViewRaw as unknown as React.ComponentType<
+  NaverMapViewProps & {ref?: React.Ref<NaverMapViewRef>}
+>;
+
+const SEOUL = {latitude: 37.5665, longitude: 126.978, zoom: 14, tilt: 0, bearing: 0};
 
 interface Coordinate {
   latitude: number;
@@ -29,27 +33,28 @@ export const RunningMapView = ({
   isLive = false,
   height = 250,
 }: RunningMapViewProps) => {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<NaverMapViewRef>(null);
 
-  // GPS 좌표 업데이트 시 카메라 이동
+  const onMapReady = useCallback(() => {
+    if (isLive && mapRef.current) {
+      mapRef.current.setLocationTrackingMode('Follow');
+    }
+  }, [isLive]);
+
   useEffect(() => {
     if (isLive && currentPosition && mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: currentPosition.latitude,
-          longitude: currentPosition.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        },
-        300,
-      );
+      mapRef.current.animateCameraTo({
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+        zoom: 17,
+        duration: 300,
+      });
     }
   }, [currentPosition, isLive]);
 
   const hasRoute = route.length > 0;
   const anchor = currentPosition ?? (hasRoute ? route[route.length - 1] : null);
 
-  // 비라이브 모드에서 경로 없으면 플레이스홀더
   if (!isLive && !hasRoute) {
     return (
       <View style={[styles.placeholder, {height}]}>
@@ -58,46 +63,46 @@ export const RunningMapView = ({
     );
   }
 
-  // 라이브 모드: 현재 위치 있으면 해당 위치, 없으면 서울 기본값으로 지도 렌더링
-  const initialRegion = anchor
-    ? {
-        latitude: anchor.latitude,
-        longitude: anchor.longitude,
-        latitudeDelta: isLive ? 0.005 : 0.01,
-        longitudeDelta: isLive ? 0.005 : 0.01,
-      }
-    : SEOUL_REGION;
+  const initialCamera = anchor
+    ? {latitude: anchor.latitude, longitude: anchor.longitude, zoom: isLive ? 17 : 14, tilt: 0, bearing: 0}
+    : SEOUL;
 
   return (
-    <MapView
+    <NaverMapView
       ref={mapRef}
       style={[styles.map, {height}]}
-      provider={PROVIDER_GOOGLE}
-      initialRegion={initialRegion}
-      showsUserLocation={isLive}
-      showsMyLocationButton={isLive}
-      followsUserLocation={false}>
-      {hasRoute && (
-        <Polyline
-          coordinates={route}
-          strokeColor={colors.primary}
-          strokeWidth={4}
+      initialCamera={initialCamera}
+      isShowLocationButton={isLive}
+      isShowCompass={false}
+      isShowScaleBar={false}
+      isScrollGesturesEnabled
+      onInitialized={onMapReady}>
+
+      {hasRoute && route.length >= 2 && (
+        <NaverMapPathOverlay
+          coords={route}
+          width={5}
+          color={colors.primary}
+          outlineWidth={1}
+          outlineColor="rgba(255,255,255,0.4)"
         />
       )}
-      {currentPosition && isLive && (
-        <Marker
-          coordinate={currentPosition}
-          pinColor={colors.primary}
-          title="현재 위치"
-        />
-      )}
+
       {!isLive && hasRoute && (
-        <>
-          <Marker coordinate={route[0]} pinColor="#4CAF50" title="출발" />
-          <Marker coordinate={route[route.length - 1]} pinColor="#F44336" title="도착" />
-        </>
+        <NaverMapMarkerOverlay
+          latitude={route[0].latitude}
+          longitude={route[0].longitude}
+          caption={{text: '출발', textSize: 12}}
+        />
       )}
-    </MapView>
+      {!isLive && hasRoute && route.length >= 2 && (
+        <NaverMapMarkerOverlay
+          latitude={route[route.length - 1].latitude}
+          longitude={route[route.length - 1].longitude}
+          caption={{text: '도착', textSize: 12}}
+        />
+      )}
+    </NaverMapView>
   );
 };
 
