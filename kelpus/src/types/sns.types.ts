@@ -22,3 +22,21 @@ export interface VlogFeed {
   hashtags: string[];
   likesCount: number;
 }
+
+export interface VlogFeedItem {
+  id: string;
+  original_url: string;
+  author_account: string;
+  hashtags: string[];
+  like_count: number;
+  platform: string;
+  crawled_at: string;
+}
+
+export interface FeedListResponse {
+  items: VlogFeedItem[];
+  total: number;
+  from_cache: boolean;
+  page: number;
+  page_size: number;
+}

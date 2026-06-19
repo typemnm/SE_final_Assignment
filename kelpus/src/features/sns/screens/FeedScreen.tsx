@@ -7,6 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useSavedReels} from '../hooks/useSavedReels';
@@ -23,6 +25,8 @@ import {ThemeBackground} from '@components/common/ThemeBackground';
 import {useThemeContext} from '@theme/ThemeContext';
 import {MOCK_FEED, type MockFeedPost} from '../data/mockFeedData';
 import type {SavedReel} from '../hooks/useSavedReels';
+import {useSns} from '../hooks/useSns';
+import type {SnsPost} from '@appTypes/sns.types';
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -62,6 +66,7 @@ export const FeedScreen = () => {
   const insets = useSafeAreaInsets();
   const {reels, loadReels} = useSavedReels();
   const {posts: userPosts, loadPosts, createPost, deletePost} = useUserPosts();
+  const {posts, loading, refreshing, loadFeed, refreshFeed} = useSns();
 
   const [reelsViewerVisible, setReelsViewerVisible] = useState(false);
   const [reelsInitialIndex, setReelsInitialIndex]   = useState(0);
@@ -84,8 +89,9 @@ export const FeedScreen = () => {
       ));
       anim.start();
       loadPosts();
+      loadFeed(1);
       return () => anim.stop();
-    }, [SA, loadPosts]),
+    }, [SA, loadPosts, loadFeed]),
   );
 
   useEffect(() => {
@@ -127,10 +133,28 @@ export const FeedScreen = () => {
     })),
   [userPosts]);
 
+  const apiToMockPost = (p: SnsPost): MockFeedPost => ({
+    id: p.id,
+    author: {
+      username: p.author.username,
+      displayName: p.author.username,
+      profileImage: p.author.profileImage ?? 'https://i.pravatar.cc/100',
+    },
+    caption: p.caption || p.hashtags.map(t => `#${t}`).join(' '),
+    hashtags: p.hashtags,
+    likesCount: p.likesCount,
+    commentsCount: 0,
+    audioTitle: 'Instagram',
+    postedAt: p.postedAt,
+  });
+
   // 유저 게시물 + 목 피드 합치기 (유저 게시물 상단)
   const allFeedPosts = useMemo<MockFeedPost[]>(
-    () => [...userFeedPosts, ...MOCK_FEED],
-    [userFeedPosts],
+    () => {
+      const apiFeed = posts.length > 0 ? posts.map(apiToMockPost) : MOCK_FEED;
+      return [...userFeedPosts, ...apiFeed];
+    },
+    [userFeedPosts, posts],
   );
 
   // 게시물 클릭: 유저 게시물이면 연결된 릴스를 SavedReelViewer로, 아니면 ReelsViewerModal로
@@ -228,6 +252,9 @@ export const FeedScreen = () => {
 
       {/* ── Thread feed ─────────────────────────────────────────── */}
       <Animated.View style={[{flex: 1}, fadeSlide(SA[0])]}>
+        {posts.length === 0 && loading && (
+          <ActivityIndicator size="large" color={tc.teal} style={{marginTop: 40}} />
+        )}
         <FlatList
           data={allFeedPosts}
           keyExtractor={item => item.id}
@@ -242,6 +269,9 @@ export const FeedScreen = () => {
           )}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[st.listContent, {paddingBottom: insets.bottom + 110}]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refreshFeed} />
+          }
         />
       </Animated.View>
 

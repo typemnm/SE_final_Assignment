@@ -1,5 +1,5 @@
 import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
-import type {SnsPost, VlogFeed} from '@appTypes/sns.types';
+import type {SnsPost, VlogFeed, VlogFeedItem, FeedListResponse} from '@appTypes/sns.types';
 import {snsApi} from '@api/sns.api';
 
 interface SnsState {
@@ -20,6 +20,22 @@ const initialState: SnsState = {
   error: null,
 };
 
+const vlogItemToSnsPost = (item: VlogFeedItem): SnsPost => ({
+  id: item.id,
+  platform: 'instagram',
+  author: {
+    username: item.author_account,
+    profileImage: undefined,
+  },
+  thumbnail: '',
+  caption: item.hashtags.map(t => `#${t}`).join(' '),
+  hashtags: item.hashtags,
+  originalUrl: item.original_url,
+  likesCount: item.like_count,
+  postedAt: item.crawled_at,
+  cachedAt: item.crawled_at,
+});
+
 /** SnsPost를 VlogFeed 도메인 모델로 변환 */
 const toVlogFeed = (post: SnsPost): VlogFeed => ({
   postId: post.id,
@@ -34,7 +50,8 @@ export const fetchFeedThunk = createAsyncThunk(
   async (page: number, {rejectWithValue}) => {
     try {
       const response = await snsApi.getFeed(page);
-      return {posts: response.data, page};
+      const posts = response.data.items.map(vlogItemToSnsPost);
+      return {posts, page};
     } catch {
       return rejectWithValue('피드를 불러오지 못했습니다.');
     }

@@ -34,3 +34,17 @@ async def get_feed(
         db=db,
         redis_client=None,  # 실제 Redis 연결은 lifespan에서 주입
     )
+
+
+@feed_router.post(
+    "/refresh",
+    summary="피드 새로고침 및 크롤링 트리거",
+    description="#kelpus 해시태그 게시물을 크롤링하여 DB에 저장한다.",
+)
+async def refresh_feed(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """피드 새로고침 엔드포인트."""
+    count = await service.trigger_crawl(db)
+    return {"message": "크롤링 완료", "count": count}
