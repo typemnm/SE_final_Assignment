@@ -1,0 +1,32 @@
+diff --git a/node_modules/@mj-studio/react-native-naver-map/android/build.gradle b/node_modules/@mj-studio/react-native-naver-map/android/build.gradle
+--- a/node_modules/@mj-studio/react-native-naver-map/android/build.gradle
++++ b/node_modules/@mj-studio/react-native-naver-map/android/build.gradle
+@@ -21,9 +21,10 @@ def isNewArchitectureEnabled() {
+ apply plugin: "com.android.library"
+ apply plugin: "kotlin-android"
+
+-if (isNewArchitectureEnabled()) {
+-  apply plugin: "com.facebook.react"
+-}
++// Always apply com.facebook.react so codegen generates NativeRNCNaverMapUtilSpec
++// in both old-arch and new-arch builds. IS_NEW_ARCHITECTURE_ENABLED BuildConfig
++// still controls runtime new-arch behaviour.
++apply plugin: "com.facebook.react"
+
+ def getExtOrDefault(name) {
+   return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["NaverMap_" + name]
+@@ -107,10 +108,8 @@ dependencies {
+   implementation "com.google.android.gms:play-services-location:${getExtOrDefault("locationServiceVersion")}"
+ }
+
+-if (isNewArchitectureEnabled()) {
+-  react {
+-    jsRootDir = file("../src/")
+-    libraryName = "NaverMapView"
+-    codegenJavaPackageName = "com.mjstudio.reactnativenavermap"
+-  }
++react {
++  jsRootDir = file("../src/")
++  libraryName = "NaverMapView"
++  codegenJavaPackageName = "com.mjstudio.reactnativenavermap"
+ }
