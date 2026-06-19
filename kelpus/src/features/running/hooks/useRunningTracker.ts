@@ -28,7 +28,7 @@ const requestLocationPermission = async (): Promise<boolean> => {
       '위치 권한이 차단되어 있습니다. 설정에서 직접 허용해 주세요.',
       [
         {text: '취소', style: 'cancel'},
-        {text: '설정 열기', onPress: openSettings},
+        {text: '설정 열기', onPress: () => { void openSettings(); }},
       ],
     );
     return false;
@@ -83,7 +83,7 @@ export const useRunningTracker = () => {
         if (err.code === 1 /* PERMISSION_DENIED */ && Platform.OS === 'android') {
           Alert.alert('GPS 권한 없음', '위치 권한이 거부되었습니다. 설정에서 허용해 주세요.', [
             {text: '확인'},
-            {text: '설정 열기', onPress: openSettings},
+            {text: '설정 열기', onPress: () => { void openSettings(); }},
           ]);
         }
       },
