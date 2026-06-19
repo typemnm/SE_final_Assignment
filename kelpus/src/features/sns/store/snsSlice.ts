@@ -52,7 +52,8 @@ export const fetchFeedThunk = createAsyncThunk(
       const response = await snsApi.getFeed(page);
       const posts = response.data.items.map(vlogItemToSnsPost);
       return {posts, page};
-    } catch {
+    } catch (e) {
+      console.error('[SNS] 피드 로드 실패:', e);
       return rejectWithValue('피드를 불러오지 못했습니다.');
     }
   },

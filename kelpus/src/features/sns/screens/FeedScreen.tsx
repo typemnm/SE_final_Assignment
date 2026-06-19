@@ -23,7 +23,7 @@ import {PostComposerSheet} from '../components/PostComposerSheet';
 import {AppHeader} from '@components/common/AppHeader';
 import {ThemeBackground} from '@components/common/ThemeBackground';
 import {useThemeContext} from '@theme/ThemeContext';
-import {MOCK_FEED, type MockFeedPost} from '../data/mockFeedData';
+import type {MockFeedPost} from '../data/mockFeedData';
 import type {SavedReel} from '../hooks/useSavedReels';
 import {useSns} from '../hooks/useSns';
 import type {SnsPost} from '@appTypes/sns.types';
@@ -150,10 +150,7 @@ export const FeedScreen = () => {
 
   // 유저 게시물 + 목 피드 합치기 (유저 게시물 상단)
   const allFeedPosts = useMemo<MockFeedPost[]>(
-    () => {
-      const apiFeed = posts.length > 0 ? posts.map(apiToMockPost) : MOCK_FEED;
-      return [...userFeedPosts, ...apiFeed];
-    },
+    () => [...userFeedPosts, ...posts.map(apiToMockPost)],
     [userFeedPosts, posts],
   );
 
