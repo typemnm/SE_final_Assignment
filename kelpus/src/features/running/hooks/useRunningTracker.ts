@@ -1,5 +1,7 @@
 import {useCallback, useEffect, useRef} from 'react';
+import {Alert, Platform} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
+import {check, request, PERMISSIONS, RESULTS, openSettings} from 'react-native-permissions';
 import type {AppDispatch, RootState} from '@store/index';
 import {
   setTrackingStatus,
@@ -11,6 +13,34 @@ import {runningService} from '../services/runningService';
 import {Geo} from '../services/geolocation';
 import {calcDistanceKm, calcPaceMinPerKm, estimateCalories} from '../utils';
 import type {TrackingPoint} from '../types';
+
+const requestLocationPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return true;
+
+  const permission = PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+  const current = await check(permission);
+
+  if (current === RESULTS.GRANTED) return true;
+
+  if (current === RESULTS.BLOCKED) {
+    Alert.alert(
+      'GPS 권한 차단됨',
+      '위치 권한이 차단되어 있습니다. 설정에서 직접 허용해 주세요.',
+      [
+        {text: '취소', style: 'cancel'},
+        {text: '설정 열기', onPress: openSettings},
+      ],
+    );
+    return false;
+  }
+
+  const result = await request(permission);
+  if (result !== RESULTS.GRANTED) {
+    Alert.alert('위치 권한 필요', 'GPS 러닝을 사용하려면 위치 권한이 필요합니다.');
+    return false;
+  }
+  return true;
+};
 
 export const useRunningTracker = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -48,12 +78,23 @@ export const useRunningTracker = () => {
         const newDistanceKm = calcDistanceKm(newRoute);
         dispatch(addRoutePoint({point, newDistanceKm}));
       },
-      _err => { /* 위치 오류 무시 */ },
-      {enableHighAccuracy: true, maximumAge: 0},
+      err => {
+        console.warn('[GPS error]', err.code, err.message);
+        if (err.code === 1 /* PERMISSION_DENIED */ && Platform.OS === 'android') {
+          Alert.alert('GPS 권한 없음', '위치 권한이 거부되었습니다. 설정에서 허용해 주세요.', [
+            {text: '확인'},
+            {text: '설정 열기', onPress: openSettings},
+          ]);
+        }
+      },
+      {enableHighAccuracy: true, maximumAge: 0, timeout: 15000},
     );
   }, [dispatch]);
 
-  const startTracking = useCallback(() => {
+  const startTracking = useCallback(async () => {
+    const granted = await requestLocationPermission();
+    if (!granted) return;
+
     dispatch(setTrackingStatus('tracking'));
     timerRef.current = setInterval(() => {
       dispatch(incrementElapsedSeconds());
@@ -67,7 +108,10 @@ export const useRunningTracker = () => {
     _stopWatch();
   }, [dispatch, _stopTimer, _stopWatch]);
 
-  const resumeTracking = useCallback(() => {
+  const resumeTracking = useCallback(async () => {
+    const granted = await requestLocationPermission();
+    if (!granted) return;
+
     dispatch(setTrackingStatus('tracking'));
     timerRef.current = setInterval(() => {
       dispatch(incrementElapsedSeconds());
