@@ -10,13 +10,33 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.sns.repository import VlogFeedRepository
 from app.domains.sns.schemas import FeedListResponse, VlogFeedItem
+from app.infrastructure.crawlers.sns_crawler import SNSCrawlerService
 
 logger = logging.getLogger(__name__)
 
 _feed_repo = VlogFeedRepository()
+_crawler = SNSCrawlerService()
 
 # 캐시 TTL (초)
 _CACHE_TTL_SECONDS = 300
+
+
+async def trigger_crawl(db: AsyncSession) -> int:
+    """
+    #kelpus 해시태그 크롤링을 실행하고 DB에 저장한다.
+
+    Args:
+        db: 비동기 DB 세션.
+
+    Returns:
+        저장된 피드 수.
+    """
+    posts = await _crawler.collect_hashtag_posts("kelpus")
+    if not posts:
+        return 0
+    count = await _feed_repo.upsert_many(posts, db)
+    await db.commit()
+    return count
 
 
 async def get_feed_list(
