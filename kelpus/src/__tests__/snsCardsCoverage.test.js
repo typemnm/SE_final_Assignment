@@ -24,9 +24,9 @@ test('thread cards cover running, image, text, interactions, counts, and delete'
     buttons[1].onPress();
   });
   const running = render(<FeedThreadCard post={MOCK_FEED[0]} onPress={onPress} onDelete={onDelete} />);
-  expect(running.getByText('4.2k')).toBeTruthy();
+  expect(running.getByText('1.2만')).toBeTruthy();
   fireEvent.press(running.getByText('🤍'));
-  expect(running.getByText('4.2k')).toBeTruthy();
+  expect(running.getByText('1.2만')).toBeTruthy();
   fireEvent.press(running.getByText('❤️'));
   fireEvent.press(running.getByText('📌'));
   fireEvent.press(running.getByText('🔖'));
@@ -38,16 +38,16 @@ test('thread cards cover running, image, text, interactions, counts, and delete'
 
   const image = render(<FeedThreadCard post={MOCK_FEED[1]} onPress={onPress} />);
   fireEvent.press(image.getByText(/릴스로 보기/));
-  expect(image.getByText('8.1k')).toBeTruthy();
+  expect(image.getByText('2.5만')).toBeTruthy();
   image.unmount();
   const text = render(<FeedThreadCard post={MOCK_FEED[2]} onPress={onPress} />);
-  expect(text.getByText('1.6만')).toBeTruthy();
+  expect(text.getByText('1.8만')).toBeTruthy();
 });
 
 test('full-screen reels cover stats and image cards with public actions', () => {
   const detail = jest.fn();
   const running = render(<ReelsCard post={MOCK_FEED[0]} height={700} onPressDetail={detail} />);
-  expect(running.getByText('4.2k')).toBeTruthy();
+  expect(running.getByText('1.2만')).toBeTruthy();
   fireEvent.press(running.getByText('Follow'));
   expect(running.getByText('팔로잉')).toBeTruthy();
   fireEvent.press(running.getByText('🤍'));
@@ -59,7 +59,7 @@ test('full-screen reels cover stats and image cards with public actions', () => 
   running.unmount();
 
   const image = render(<ReelsCard post={MOCK_FEED[4]} height={700} onPressDetail={detail} />);
-  expect(image.getByText('1.3만')).toBeTruthy();
+  expect(image.getByText('3.1만')).toBeTruthy();
 });
 
 test('saved reel cards and list items cover diet, long run, short run, captions, and empty frames', () => {

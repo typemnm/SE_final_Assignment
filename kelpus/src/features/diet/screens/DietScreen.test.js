@@ -10,6 +10,7 @@ jest.mock('../hooks/useDiet', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
+  useFocusEffect: jest.fn(cb => cb()),
 }));
 
 const createDietState = overrides => ({

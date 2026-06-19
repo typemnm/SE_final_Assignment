@@ -5,6 +5,7 @@ pydantic-settings를 통해 환경 변수를 로드하고 유효성을 검사한
 
 from functools import lru_cache
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -33,6 +34,9 @@ class Settings(BaseSettings):
     # SNS 크롤러
     INSTAGRAM_API_TOKEN: str = "dummy-token"
 
+    # Apple 소셜 로그인
+    APPLE_APP_BUNDLE_ID: str = "com.kelpus.app"
+
     # 지도 API
     MAP_API_KEY: str = "dummy-map-key"
 
@@ -43,9 +47,7 @@ class Settings(BaseSettings):
     # Redis (피드 캐싱)
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 @lru_cache()

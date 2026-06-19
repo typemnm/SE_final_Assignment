@@ -19,6 +19,12 @@ jest.mock('../theme/ThemeContext', () => {
   const {darkTheme} = jest.requireActual('../theme/themeColors');
   return {useThemeContext: () => ({tc: darkTheme})};
 });
+jest.mock('../features/sns/hooks/useSns', () => {
+  const {MOCK_FEED} = jest.requireActual('../features/sns/data/mockFeedData');
+  return {
+    useSns: () => ({posts: MOCK_FEED, loading: false, refreshing: false, loadFeed: jest.fn(), refreshFeed: jest.fn()}),
+  };
+});
 jest.mock('../features/sns/hooks/useSavedReels', () => ({
   useSavedReels: () => ({reels: mockReels, loadReels: mockLoadReels}),
 }));
