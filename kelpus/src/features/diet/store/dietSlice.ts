@@ -1,6 +1,7 @@
 import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
 import type {DietRecord, DietAnalysisResult} from '@appTypes/diet.types';
 import {dietApi} from '@api/diet.api';
+import {MOCK_DIET_RECORDS, MOCK_DIET_ANALYSIS} from '../data/mockDietData';
 
 interface DietState {
   records: DietRecord[];
@@ -17,9 +18,9 @@ interface RequestAnalysisArgs {
 }
 
 const initialState: DietState = {
-  records: [],
-  analysisHistory: [],
-  currentAnalysis: null,
+  records: MOCK_DIET_RECORDS,
+  analysisHistory: [MOCK_DIET_ANALYSIS],
+  currentAnalysis: MOCK_DIET_ANALYSIS,
   loading: false,
   analyzing: false,
   error: null,
