@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useCallback} from 'react';
+import React, {useRef, useEffect} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
 import {
   NaverMapView as NaverMapViewRaw,
@@ -35,12 +35,6 @@ export const RunningMapView = ({
 }: RunningMapViewProps) => {
   const mapRef = useRef<NaverMapViewRef>(null);
 
-  const onMapReady = useCallback(() => {
-    if (isLive && mapRef.current) {
-      mapRef.current.setLocationTrackingMode('Follow');
-    }
-  }, [isLive]);
-
   useEffect(() => {
     if (isLive && currentPosition && mapRef.current) {
       mapRef.current.animateCameraTo({
@@ -72,11 +66,10 @@ export const RunningMapView = ({
       ref={mapRef}
       style={[styles.map, {height}]}
       initialCamera={initialCamera}
-      isShowLocationButton={isLive}
+      isShowLocationButton={false}
       isShowCompass={false}
       isShowScaleBar={false}
-      isScrollGesturesEnabled
-      onInitialized={onMapReady}>
+      isScrollGesturesEnabled>
 
       {hasRoute && route.length >= 2 && (
         <NaverMapPathOverlay

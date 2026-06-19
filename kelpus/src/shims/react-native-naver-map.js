@@ -17,6 +17,7 @@ const NaverMapGroundOverlay = () => null;
 const useInfoWindow = () => ({openWith: () => {}, close: () => {}});
 
 export {
+  NaverMapView,
   NaverMapMarkerOverlay,
   NaverMapPathOverlay,
   NaverMapPolylineOverlay,
