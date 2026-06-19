@@ -178,6 +178,19 @@ class VideoProcessorModule(private val reactContext: ReactApplicationContext) :
                     if (audioTrack >= 0) {
                         audioMuxTrack = muxer.addTrack(extractor.getTrackFormat(audioTrack))
                     }
+                    // 입력 영상의 회전 메타데이터를 출력에 그대로 적용 (세로 영상 보존)
+                    val retriever = MediaMetadataRetriever()
+                    try {
+                        retriever.setDataSource(filePath)
+                        val rotation = retriever.extractMetadata(
+                            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION
+                        )?.toIntOrNull() ?: 90
+                        muxer.setOrientationHint(rotation)
+                    } catch (ignored: Exception) {
+                        muxer.setOrientationHint(90)
+                    } finally {
+                        retriever.release()
+                    }
                     muxer.start()
                     muxerStarted = true
                 }
