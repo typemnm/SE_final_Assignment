@@ -4,10 +4,16 @@ import {DietScreen} from './DietScreen';
 import {useDiet} from '../hooks/useDiet';
 import {useNavigation} from '@react-navigation/native';
 
+jest.mock('@theme/ThemeContext', () => {
+  const {darkTheme} = jest.requireActual('../../../theme/themeColors');
+  return {useThemeContext: () => ({tc: darkTheme})};
+});
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0}),
+}));
 jest.mock('../hooks/useDiet', () => ({
   useDiet: jest.fn(),
 }));
-
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
   useFocusEffect: jest.fn(cb => cb()),
@@ -52,6 +58,7 @@ describe('DietScreen camera and manual analysis UX', () => {
     useDiet.mockReturnValue(state);
 
     const {getByPlaceholderText, getByText} = render(<DietScreen />);
+    fireEvent.press(getByText('📊  식단 AI 분석하기'));
     fireEvent.changeText(getByPlaceholderText(/example.com/), 'https://example.com/meal.jpg');
     fireEvent.press(getByText('AI 분석 요청'));
 
@@ -66,7 +73,8 @@ describe('DietScreen camera and manual analysis UX', () => {
     useDiet.mockReturnValue(state);
 
     const {getByText} = render(<DietScreen />);
-    fireEvent.press(getByText('카메라로 촬영'));
+    fireEvent.press(getByText('📊  식단 AI 분석하기'));
+    fireEvent.press(getByText('📷  카메라로 촬영'));
 
     await waitFor(() => {
       expect(state.analyzeCapturedImage).toHaveBeenCalledTimes(1);
@@ -75,7 +83,7 @@ describe('DietScreen camera and manual analysis UX', () => {
   });
 
   it('renders a single error message when camera and analysis errors overlap', () => {
-    const message = 'AI 분석 요청에 실패했습니다.';
+    const message = 'AI 분析 요청에 실패했습니다.';
     useDiet.mockReturnValue(
       createDietState({
         cameraError: message,
@@ -89,7 +97,7 @@ describe('DietScreen camera and manual analysis UX', () => {
   });
 
   it('keeps manual analysis errors visible when no camera error is active', () => {
-    const message = 'AI 분석 요청에 실패했습니다.';
+    const message = 'AI 분析 요청에 실패했습니다.';
     useDiet.mockReturnValue(createDietState({error: message}));
 
     const {getByText} = render(<DietScreen />);
@@ -104,6 +112,7 @@ describe('DietScreen camera and manual analysis UX', () => {
     useDiet.mockReturnValue(state);
 
     const {getByPlaceholderText, getByText} = render(<DietScreen />);
+    fireEvent.press(getByText('📊  식단 AI 분석하기'));
     fireEvent.changeText(getByPlaceholderText(/example.com/), 'https://example.com/meal.jpg');
     fireEvent.press(getByText('AI 분석 요청'));
 
@@ -156,6 +165,7 @@ describe('DietScreen camera and manual analysis UX', () => {
     useDiet.mockReturnValue(state);
 
     const {getByText} = render(<DietScreen />);
+    fireEvent.press(getByText('📊  식단 AI 분석하기'));
     fireEvent.press(getByText('기존 분석 Health Connect 내보내기'));
 
     await waitFor(() => {

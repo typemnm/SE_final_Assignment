@@ -132,11 +132,11 @@ export const DietScreen = () => {
 
   // Status messages
   const backfillSummaryText = healthConnectBackfillSummary
-    ? `내보내기: 성공 ${healthConnectBackfillSummary.exported}건, 건너뜀 ${healthConnectBackfillSummary.skipped}건`
+    ? `기존 분석 내보내기: 성공 ${healthConnectBackfillSummary.exported}건, 건너뜀 ${healthConnectBackfillSummary.skipped}건, 실패 ${healthConnectBackfillSummary.failed}건`
     : null;
   const hcMessage =
     healthConnectExportStatus === 'exported'    ? 'Health Connect에 저장되었습니다.'         :
-    healthConnectExportStatus === 'permission_required' ? 'Health Connect 권한이 필요합니다.' :
+    healthConnectExportStatus === 'permission_required' ? 'Health Connect 영양 쓰기 권한이 필요합니다.' :
     healthConnectExportStatus === 'unavailable' ? 'Health Connect를 사용할 수 없습니다.'     :
     healthConnectExportStatus === 'failed'      ? (healthConnectExportError ?? '내보내기 실패') : null;
 
@@ -377,14 +377,15 @@ export const DietScreen = () => {
                 disabled={isBusy || healthConnectBackfillBusy}
                 activeOpacity={0.75}>
                 <Text style={s.outlineBtnText}>
-                  {healthConnectBackfillBusy ? '내보내는 중...' : 'Health Connect 내보내기'}
+                  {healthConnectBackfillBusy ? '내보내는 중...' : '기존 분석 Health Connect 내보내기'}
                 </Text>
               </TouchableOpacity>
 
-              {cameraBusy ? <Text style={s.formHelper}>사진 업로드 후 AI 분석 요청 중...</Text> : null}
               <Text style={s.formHelper}>이미지 URL 또는 업로드 API URL을 입력하세요.</Text>
             </View>
           )}
+
+          {cameraBusy ? <Text style={s.formHelper}>사진 업로드 후 AI 분석을 요청하는 중입니다.</Text> : null}
 
           {/* Status messages */}
           {displayError        ? <Text style={[s.statusText, {color: colors.error}]}>{displayError}</Text>          : null}
