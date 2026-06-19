@@ -14,6 +14,7 @@ import {useUserPosts, type UserPost} from '../hooks/useUserPosts';
 import {FeedThreadCard} from '../components/FeedThreadCard';
 import {ReelsViewerModal} from '../components/ReelsViewerModal';
 import {ReelCreatorModal, type FeedShareData} from '../components/ReelCreatorModal';
+import {VideoRecorderModal} from '../components/VideoRecorderModal';
 import {SavedReelListItem} from '../components/SavedReelListItem';
 import {SavedReelViewer} from '../components/SavedReelViewer';
 import {PostComposerSheet} from '../components/PostComposerSheet';
@@ -65,6 +66,7 @@ export const FeedScreen = () => {
   const [reelsViewerVisible, setReelsViewerVisible] = useState(false);
   const [reelsInitialIndex, setReelsInitialIndex]   = useState(0);
   const [reelModalVisible, setReelModal]             = useState(false);
+  const [videoModalVisible, setVideoModal]           = useState(false);
   const [viewingReel, setViewingReel]                = useState<SavedReel | null>(null);
   // 기본값 true — 처음부터 펼쳐진 상태
   const [reelsExpanded, setReelsExpanded]            = useState(true);
@@ -243,17 +245,30 @@ export const FeedScreen = () => {
         />
       </Animated.View>
 
-      {/* ── FAB: 릴스 만들기 (가운데 고정) ───────────────────────── */}
+      {/* ── FAB 영역: 릴스 만들기 + 영상 편집 ─────────────────────── */}
       <Animated.View
         style={[st.fabWrap, {bottom: insets.bottom + 16}, fadeSlide(SA[1])]}
         pointerEvents="box-none">
-        <TouchableOpacity
-          style={[st.fab, {backgroundColor: tc.teal, shadowColor: tc.emerald}]}
-          onPress={() => setReelModal(true)}
-          activeOpacity={0.85}>
-          <Text style={st.fabIcon}>+</Text>
-        </TouchableOpacity>
-        <Text style={[st.fabLabel, {color: tc.textDis}]}>릴스 만들기</Text>
+        {/* 영상 편집 FAB */}
+        <View style={st.fabItem}>
+          <TouchableOpacity
+            style={[st.fab, st.fabVideo, {shadowColor: tc.emerald}]}
+            onPress={() => setVideoModal(true)}
+            activeOpacity={0.85}>
+            <Text style={st.fabIcon}>🎬</Text>
+          </TouchableOpacity>
+          <Text style={[st.fabLabel, {color: tc.textDis}]}>영상 편집</Text>
+        </View>
+        {/* 릴스 만들기 FAB */}
+        <View style={st.fabItem}>
+          <TouchableOpacity
+            style={[st.fab, {backgroundColor: tc.teal, shadowColor: tc.emerald}]}
+            onPress={() => setReelModal(true)}
+            activeOpacity={0.85}>
+            <Text style={st.fabIcon}>+</Text>
+          </TouchableOpacity>
+          <Text style={[st.fabLabel, {color: tc.textDis}]}>릴스 만들기</Text>
+        </View>
       </Animated.View>
 
       {/* ── Reels fullscreen viewer ───────────────────────────────── */}
@@ -279,6 +294,9 @@ export const FeedScreen = () => {
           onClose={() => setViewingReel(null)}
           onShareToFeed={handleShareToFeed}
         />
+      )}
+      {videoModalVisible && (
+        <VideoRecorderModal onClose={() => setVideoModal(false)} />
       )}
       <PostComposerSheet
         visible={composerVisible}
@@ -346,18 +364,24 @@ const st = StyleSheet.create({
   dividerLine: {flex: 1, height: 1},
   dividerLabel: {fontSize: 12, fontWeight: '600'},
 
-  /* FAB — 가운데 고정 */
+  /* FAB — 가운데 고정 (가로 배치) */
   fabWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    gap: 20,
+  },
+  fabItem: {
     alignItems: 'center',
     gap: 4,
   },
   fab: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: {width: 0, height: 4},
@@ -365,6 +389,9 @@ const st = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
   },
-  fabIcon: {fontSize: 32, color: '#fff', lineHeight: 38},
+  fabVideo: {
+    backgroundColor: '#7C3AED',
+  },
+  fabIcon: {fontSize: 26, color: '#fff', lineHeight: 32},
   fabLabel: {fontSize: 10, fontWeight: '600'},
 });

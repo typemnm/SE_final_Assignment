@@ -1,4 +1,10 @@
 export {FeedScreen} from './screens/FeedScreen';
+export {VideoRecorderModal} from './components/VideoRecorderModal';
+export {VideoClipCard} from './components/VideoClipCard';
+export {useVideoRecorder} from './hooks/useVideoRecorder';
+export {videoProcessor} from './services/videoProcessor';
+export type {VideoClip} from './hooks/useVideoRecorder';
+export type {ClipInput} from './services/videoProcessor';
 export {FeedCard} from './components/FeedCard';
 export {ReelCreatorModal} from './components/ReelCreatorModal';
 export {ReelPreviewPlayer} from './components/ReelPreviewPlayer';
