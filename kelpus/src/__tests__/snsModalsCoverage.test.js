@@ -45,6 +45,7 @@ const reel = {
 };
 
 beforeEach(() => {
+  jest.useFakeTimers();
   jest.clearAllMocks();
   mockCapture = jest.fn().mockResolvedValue('file://frame.jpg');
   mockSaveToDevice.mockResolvedValue('saved');
@@ -55,6 +56,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
 });
 

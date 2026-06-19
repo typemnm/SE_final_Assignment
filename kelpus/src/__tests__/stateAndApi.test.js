@@ -86,7 +86,7 @@ test('API wrappers preserve methods, paths, payloads, and subscription transform
     ['/api/v1/auth/logout'],
     ['/api/v1/auth/refresh', {refresh_token: 'refresh'}],
     ['/running/sync', []],
-    ['/sns/refresh'],
+    ['/api/v1/feed/refresh'],
     ['/api/v1/subscription/upgrade', {planType: 'premium'}],
   ]));
   expect(mockApiClient.get.mock.calls).toEqual(expect.arrayContaining([
@@ -96,7 +96,7 @@ test('API wrappers preserve methods, paths, payloads, and subscription transform
     ['/running'],
     ['/running/r1'],
     ['/running/leaderboard?period=weekly&criterion=distance'],
-    ['/sns/feed?page=2'],
+    ['/api/v1/feed?page=2'],
   ]));
   expect(mockApiClient.patch).toHaveBeenCalledWith('/api/v1/users/me', {age: 20});
   expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/auth/account');

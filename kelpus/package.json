@@ -114,8 +114,10 @@
       "^@navigation/(.*)$": "<rootDir>/src/navigation/$1",
       "\\.(png|jpg|jpeg|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
       "^react-native-image-picker$": "<rootDir>/src/shims/react-native-image-picker.js",
-      "^react-native-config$": "<rootDir>/src/shims/react-native-config.js"
+      "^react-native-config$": "<rootDir>/src/shims/react-native-config.js",
+      "^react-native-linear-gradient$": "<rootDir>/__mocks__/react-native-linear-gradient.js"
     },
+    "testPathIgnorePatterns": ["/node_modules/", "/KelpusNative/"],
     "setupFiles": [
       "react-native-gesture-handler/jestSetup"
     ]

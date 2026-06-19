@@ -208,17 +208,69 @@ async def _verify_google_token(id_token: str) -> tuple[str, str | None]:
     return data["sub"], data.get("email")
 
 
+import time as _time
+
+_apple_jwks_cache: dict = {"keys": [], "expires": 0.0}
+
+
+async def _fetch_apple_jwks() -> list:
+    global _apple_jwks_cache
+    if _time.time() < _apple_jwks_cache["expires"] and _apple_jwks_cache["keys"]:
+        return _apple_jwks_cache["keys"]
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get("https://appleid.apple.com/auth/keys")
+        if resp.status_code != 200:
+            raise ValueError("JWKS fetch failed")
+        data = resp.json()
+        keys = data.get("keys", [])
+        _apple_jwks_cache = {"keys": keys, "expires": _time.time() + 3600.0}
+        return keys
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple JWKS 조회 실패")
+
+
 async def _verify_apple_token(identity_token: str) -> tuple[str, str | None]:
-    """Apple identity token (JWT)의 페이로드를 디코딩해 sub를 추출한다."""
+    """Apple identity token의 JWKS 서명을 검증하고 sub를 반환한다."""
+    from jose import jwt as jose_jwt, JWTError as _JWTError
+
     parts = identity_token.split(".")
     if len(parts) != 3:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 형식 오류")
-    padding = (-len(parts[1])) % 4
-    payload_b64 = parts[1] + ("=" * padding)
-    payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+
+    try:
+        header_padding = (-len(parts[0])) % 4
+        header = json.loads(base64.urlsafe_b64decode(parts[0] + "=" * header_padding))
+        kid = header.get("kid")
+        alg = header.get("alg", "RS256")
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 헤더 파싱 실패")
+
+    if alg != "RS256":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 알고리즘 오류")
+
+    jwks = await _fetch_apple_jwks()
+    matching_keys = [k for k in jwks if k.get("kid") == kid]
+    if not matching_keys:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 kid 불일치")
+
+    public_key = matching_keys[0]
+
+    try:
+        payload = jose_jwt.decode(
+            identity_token,
+            public_key,
+            algorithms=["RS256"],
+            audience=settings.APPLE_APP_BUNDLE_ID,
+            issuer="https://appleid.apple.com",
+            options={"verify_exp": True},
+        )
+    except _JWTError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 검증 실패") from exc
+
     sub: str | None = payload.get("sub")
     if not sub:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 검증 실패")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple 토큰 sub 없음")
     return sub, payload.get("email")
 
 
