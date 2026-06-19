@@ -8,8 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Share,
 } from 'react-native';
+import {videoProcessor} from '../services/videoProcessor';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useVideoRecorder} from '../hooks/useVideoRecorder';
 import {VideoClipCard} from './VideoClipCard';
@@ -42,16 +42,23 @@ export const VideoRecorderModal = ({onClose}: Props) => {
     onClose();
   };
 
+  const handleOpen = async () => {
+    if (!combinedUri) {
+      return;
+    }
+    try {
+      await videoProcessor.openVideo(combinedUri);
+    } catch (e: any) {
+      Alert.alert('열기 실패', e?.message ?? '영상을 열 수 없습니다.');
+    }
+  };
+
   const handleShare = async () => {
     if (!combinedUri) {
       return;
     }
     try {
-      await Share.share({
-        title: 'Kelpus 영상',
-        url: combinedUri,
-        message: `#kelpus #일상기록 ${combinedUri}`,
-      });
+      await videoProcessor.shareVideo(combinedUri);
     } catch (e: any) {
       Alert.alert('공유 실패', e?.message ?? '공유 중 오류가 발생했습니다.');
     }
@@ -215,6 +222,13 @@ export const VideoRecorderModal = ({onClose}: Props) => {
                 </Text>
               </View>
             )}
+
+            <TouchableOpacity
+              style={s.openBtn}
+              onPress={handleOpen}
+              activeOpacity={0.85}>
+              <Text style={s.openBtnText}>▶ 영상 바로 보기</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={s.shareBtn}
@@ -437,6 +451,18 @@ const s = StyleSheet.create({
     fontFamily: 'monospace',
   },
 
+  openBtn: {
+    backgroundColor: '#1D4ED8',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  openBtnText: {
+    ...typography.button,
+    color: '#fff',
+    fontWeight: '700',
+  },
   shareBtn: {
     backgroundColor: colors.primaryDark,
     borderRadius: 14,

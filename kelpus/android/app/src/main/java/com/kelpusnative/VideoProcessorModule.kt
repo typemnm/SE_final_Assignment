@@ -1,5 +1,6 @@
 package com.kelpusnative
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.media.MediaCodec
 import android.media.MediaExtractor
@@ -7,6 +8,7 @@ import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.media.MediaMuxer
 import android.os.Environment
+import androidx.core.content.FileProvider
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -70,6 +72,66 @@ class VideoProcessorModule(private val reactContext: ReactApplicationContext) :
                 promise.resolve(null)
             }
         }.start()
+    }
+
+    /**
+     * 저장된 영상 파일을 시스템 미디어 플레이어로 엽니다.
+     */
+    @ReactMethod
+    fun openVideo(uri: String, promise: Promise) {
+        val activity = currentActivity
+        if (activity == null) {
+            promise.reject("NO_ACTIVITY", "Activity를 찾을 수 없습니다")
+            return
+        }
+        try {
+            val file = File(uriToPath(uri))
+            val contentUri = FileProvider.getUriForFile(
+                reactContext,
+                "${reactContext.packageName}.fileprovider",
+                file,
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, "video/mp4")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            activity.startActivity(intent)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("OPEN_ERROR", e.message ?: "영상 열기 실패", e)
+        }
+    }
+
+    /**
+     * 저장된 영상 파일을 다른 앱으로 공유합니다 (실제 파일 공유).
+     */
+    @ReactMethod
+    fun shareVideo(uri: String, promise: Promise) {
+        val activity = currentActivity
+        if (activity == null) {
+            promise.reject("NO_ACTIVITY", "Activity를 찾을 수 없습니다")
+            return
+        }
+        try {
+            val file = File(uriToPath(uri))
+            val contentUri = FileProvider.getUriForFile(
+                reactContext,
+                "${reactContext.packageName}.fileprovider",
+                file,
+            )
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "video/mp4"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = Intent.createChooser(intent, "영상 공유")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            activity.startActivity(chooser)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("SHARE_ERROR", e.message ?: "영상 공유 실패", e)
+        }
     }
 
     private fun buildOutputPath(): String {
